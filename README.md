@@ -1,8 +1,4 @@
 # Intelligent Robotics Project
-
-아래 내용을 README.md에 그대로 붙여넣으면 돼.
-
-# Intelligent Robotics Project
 LLM + Vision 기반 자율 반려동물 케어 로봇 프로젝트입니다.
 사용자의 자연어 입력을 LLM이 해석하고, YOLOv8 기반 객체 인식 결과와 결합하여 TurtleBot3가 적절한 행동을 수행하도록 하는 것을 목표로 합니다.
 ## Project Goal
