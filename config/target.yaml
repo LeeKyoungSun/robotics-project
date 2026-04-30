@@ -1,0 +1,54 @@
+# Static objects: ball, bed, bowl, car, chair
+# Dynamic objects: person, dog, cat
+
+# !!! x, y should be updated to actual positions after map creation !!!
+
+
+targets:
+  ball_zone:
+    frame_id: "map"
+    x: 1.0
+    y: -1.0
+    yaw: 0.0
+    description: "Ball location for play"
+    
+  bowl_zone:
+    frame_id: "map"
+    x: 1.0
+    y: -1.0
+    yaw: 0.0
+    description: "Food bowl position"
+
+  bed_zone:
+    frame_id: "map"
+    x: 1.0
+    y: -1.0
+    yaw: 0.0
+    description: "Bed location"
+
+  chair_zone:
+    frame_id: "map"
+    x: 1.0
+    y: -1.0
+    yaw: 0.0
+    description: "Chair area"
+
+  safe_observe_zone:
+    frame_id: "map"
+    x: 1.0
+    y: -1.0
+    yaw: 0.0
+    description: "Safe observation point for dangerous object"
+
+  car_zone:
+    # car에 접근 금지이므로(approach: false, follow: false)
+    # car는 car 위치로 가는 게 아니라 observe zone으로 이동할 수 있도록 구현
+
+    frame_id: "map"
+    x: 1.0
+    y: -1.0
+    yaw: 0.0
+    description: "Car observation-only zone"
+
+# Dynamic targets (people, dogs, cats) will be detected and tracked in real-time, 
+# so their positions are not predefined in this configuration.
