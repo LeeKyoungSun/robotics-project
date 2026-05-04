@@ -10,8 +10,8 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 from geometry_msgs.msg import PoseStamped
 
-from target_resolver import TargetResolver
-
+from scripts.target_resolver import TargetResolver
+from action_msgs.msg import GoalStatus
 
 class Nav2GoalSender(Node):
     def __init__(self):
@@ -112,18 +112,18 @@ class Nav2GoalSender(Node):
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
-
         distance = feedback.distance_remaining
 
-        self.get_logger().info(
-            f"Distance remaining: {distance:.2f} m"
-        )
+        self.get_logger().info(f"Distance remaining: {distance:.2f} m")
+
+        if distance < 0.1:
+            self.get_logger().info("Goal reached! Force shutdown.")
+            rclpy.shutdown()
 
     def result_callback(self, future):
-        result = future.result().result
         status = future.result().status
 
-        if status == 4:
+        if status == GoalStatus.STATUS_SUCCEEDED:
             self.get_logger().info("Navigation succeeded.")
         else:
             self.get_logger().warn(f"Navigation finished with status: {status}")

@@ -7,36 +7,36 @@
 targets:
   ball_zone:
     frame_id: "map"
-    x: 1.0
-    y: -1.0
+    x: 0.3
+    y: 0.0
     yaw: 0.0
     description: "Ball location for play"
     
   bowl_zone:
     frame_id: "map"
-    x: 1.0
-    y: -1.0
+    x: 2.0
+    y: 1.0
     yaw: 0.0
     description: "Food bowl position"
 
   bed_zone:
     frame_id: "map"
-    x: 1.0
-    y: -1.0
+    x: 2.0
+    y: 1.0
     yaw: 0.0
     description: "Bed location"
 
   chair_zone:
     frame_id: "map"
-    x: 1.0
-    y: -1.0
+    x: 2.0
+    y: 1.0
     yaw: 0.0
     description: "Chair area"
 
   safe_observe_zone:
     frame_id: "map"
-    x: 1.0
-    y: -1.0
+    x: 2.0
+    y: 1.0
     yaw: 0.0
     description: "Safe observation point for dangerous object"
 
@@ -45,8 +45,8 @@ targets:
     # car는 car 위치로 가는 게 아니라 observe zone으로 이동할 수 있도록 구현
 
     frame_id: "map"
-    x: 1.0
-    y: -1.0
+    x: 2.0
+    y: 1.0
     yaw: 0.0
     description: "Car observation-only zone"
 
