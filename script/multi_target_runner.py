@@ -8,7 +8,7 @@ import yaml
 import rclpy
 
 try:
-    from scripts.nav2_goal_sender import Nav2GoalSender
+    from script.nav2_goal_sender import Nav2GoalSender
 except ImportError:
     from nav2_goal_sender import Nav2GoalSender
 
