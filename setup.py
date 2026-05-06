@@ -42,6 +42,8 @@ setup(
         'console_scripts': [
             # 실행 명령어
             'nav2_goal_sender = scripts.nav2_goal_sender:main',
+            'multi_target_runner = scripts.multi_target_runner:main',
+            'test_pipeline = scripts.test_pipeline:main',
         ],
     },
 )
