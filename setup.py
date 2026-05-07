@@ -44,6 +44,7 @@ setup(
             'nav2_goal_sender = script.nav2_goal_sender:main',
             'multi_target_runner = script.multi_target_runner:main',
             'test_pipeline = script.test_pipeline:main',
+            'sequence_executor = script.sequence_executor:main',
         ],
     },
 )

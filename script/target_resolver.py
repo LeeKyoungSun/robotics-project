@@ -18,7 +18,7 @@ class TargetResolver:
         "bowl": "bowl_zone",
         "bed": "bed_zone",
         "chair": "chair_zone",
-        "car": "car_zone",
+        "potted_plant": "potted_plant_zone",
     }
 
     DYNAMIC_OBJECTS = {
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         "bowl",
         "bed",
         "chair",
-        "car",
+        "potted_plant",
     ]
 
     for obj in test_objects:
