@@ -41,8 +41,8 @@ objects:
     priority: "medium"
     description: "밥그릇 - 위치 추적"
 
-  car:
-    class_id: 2
-    category: "vehicle"
+  potted_plant:
+    class_id: 58
+    category: "plant"
     priority: "low"
-    description: "위험 - 접근 금지"
+    description: "Potted plant - observe-only target"

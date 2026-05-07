@@ -42,8 +42,8 @@ bowl:
   follow: false
   notes: "Pet food bowl location"
 
-car:
+potted_plant:
   approach: false
   observe: true
   follow: false
-  notes: "SAFETY - Never approach or follow"
+  notes: "Observe-only potted plant target"
