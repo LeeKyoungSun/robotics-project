@@ -26,3 +26,17 @@ follow:
     max_velocity: 0.8
     update_rate: 10
     target_lost_timeout: 3
+
+wait:
+  description: "Wait for specified duration"
+  type: "control"
+  framework: "Python"
+  parameters:
+    duration_sec: 3.0
+
+report:
+  description: "Report current status or sequence result"
+  type: "logging"
+  framework: "Python"
+  parameters:
+    message: "sequence completed"
