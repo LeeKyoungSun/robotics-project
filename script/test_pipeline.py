@@ -129,13 +129,13 @@ class RobotTestPipeline:
             assert "cat" in self.mapping, "cat 매핑 없음"
             assert self.mapping["cat"]["approach"] == True, "cat approach 불가"
 
-            # 안전 테스트 - car는 접근 금지
-            assert "car" in self.mapping, "car 매핑 없음"
-            assert self.mapping["car"]["approach"] == False, "car 접근 가능 (위험)"
+            # 안전 테스트 - potted_plant는 접근 금지
+            assert "potted_plant" in self.mapping, "potted_plant 매핑 없음"
+            assert self.mapping["potted_plant"]["approach"] == False, "potted_plant 접근 가능 (위험)"
 
             print("  dog: approach✓ observe✓ follow✓")
             print("  cat: approach✓ observe✓ follow✓")
-            print("  car: approach✗ (안전 설정)")
+            print("  potted_plant: approach✗ (안전 설정)")
             print("✓ Mapping OK")
             self.passed += 1
             return True
@@ -172,22 +172,22 @@ class RobotTestPipeline:
             self.failed += 1
             return False
 
-    def test_scenario_car_safety(self):
-        """Test 6: 시나리오 테스트 - 자동차 안전"""
-        print("\n[Test 6] Scenario: Car Safety Check")
+    def test_scenario_potted_plant_safety(self):
+        """Test 6: 시나리오 테스트 - 화분 안전"""
+        print("\n[Test 6] Scenario: Potted Plant Safety Check")
 
         try:
-            # 자동차 탐지
-            target = "car"
-            assert target in self.mapping, "car 매핑 없음"
+            # 화분 탐지
+            target = "potted_plant"
+            assert target in self.mapping, "potted_plant 매핑 없음"
 
             # 접근 금지 확인
-            assert self.mapping[target]["approach"] == False, "car 접근 가능 (위험)"
-            assert self.mapping[target]["observe"] == True, "car 관찰 불가"
-            assert self.mapping[target]["follow"] == False, "car 추종 가능 (위험)"
+            assert self.mapping[target]["approach"] == False, "potted_plant 접근 가능 (위험)"
+            assert self.mapping[target]["observe"] == True, "potted_plant 관찰 불가"
+            assert self.mapping[target]["follow"] == False, "potted_plant 추종 가능 (위험)"
 
-            print(f"  1. Detect: car (class_id: {self.objects['objects'][target]['class_id']})")
-            print(f"  2. Check mapping: car can approach? False ✓ (SAFE)")
+            print(f"  1. Detect: potted_plant (class_id: {self.objects['objects'][target]['class_id']})")
+            print(f"  2. Check mapping: potted_plant can approach? False ✓ (SAFE)")
             print(f"  3. Action: No approach, observe only")
             print("✓ Safety OK")
             self.passed += 1
@@ -210,7 +210,7 @@ class RobotTestPipeline:
                 "bowl_zone",
                 "bed_zone",
                 "chair_zone",
-                "car_zone",
+                "potted_plant_zone",
             ]
 
             for target_name in required_targets:
@@ -299,7 +299,7 @@ class RobotTestPipeline:
                 "bowl": "bowl_zone",
                 "bed": "bed_zone",
                 "chair": "chair_zone",
-                "car": "car_zone",
+                "potted_plant": "potted_plant_zone",
             }
 
             targets = self.targets["targets"]
@@ -352,7 +352,7 @@ class RobotTestPipeline:
         self.test_actions()
         self.test_mapping()
         self.test_scenario_dog_approach()
-        self.test_scenario_car_safety()
+        self.test_scenario_potted_plant_safety()
         self.test_target_config()
         self.test_navigation_policy()
         self.test_static_target_resolver()
