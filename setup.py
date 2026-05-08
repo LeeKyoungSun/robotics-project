@@ -8,7 +8,7 @@ setup(
     name=package_name,
     version='0.0.1',
 
-    # scripts 폴더 사용
+    # script 폴더 사용
     packages=[
     'script',
   ],
