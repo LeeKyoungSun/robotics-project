@@ -3,6 +3,10 @@ from glob import glob
 import os
 
 package_name = 'pet_robot_pkg'
+world_files = [
+    path for path in glob('worlds/*')
+    if os.path.isfile(path)
+]
 
 setup(
     name=package_name,
@@ -27,7 +31,7 @@ setup(
         (os.path.join('share', package_name, 'launch'),
             glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'worlds'),
-            glob('worlds/*')),
+            world_files),
     ],
 
     install_requires=[
