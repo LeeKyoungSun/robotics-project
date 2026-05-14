@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import os
 
 import rclpy
 from rclpy.node import Node
@@ -30,20 +31,30 @@ class CameraImageProcessor(Node):
         self.declare_parameter("device", "")
         self.declare_parameter("enable_display", True)
         self.declare_parameter("run_every_n_frames", 1)
+        self.declare_parameter("yolo_verbose", False)
+        self.declare_parameter("debug_frame_dir", "")
+        self.declare_parameter("debug_frame_interval", 30)
         self.declare_parameter("raw_detection_topic", "/vision/raw_detections")
         self.declare_parameter("detection_topic", "/vision/detections")
         self.declare_parameter("sequence_topic", "/vision/action_sequence")
+        self.declare_parameter("yolo_debug_topic", "/vision/yolo_debug")
 
         self.bridge = CvBridge()
         self.latest_frame = None
         self.frame_count = 0
         self.detector_error_logged = False
+        self.last_yolo_debug = {}
 
         self.image_size = int(self.get_parameter("image_size").value)
         self.enable_display = bool(self.get_parameter("enable_display").value)
         self.run_every_n_frames = max(
             1,
             int(self.get_parameter("run_every_n_frames").value),
+        )
+        self.debug_frame_dir = str(self.get_parameter("debug_frame_dir").value)
+        self.debug_frame_interval = max(
+            1,
+            int(self.get_parameter("debug_frame_interval").value),
         )
         camera_topic = str(self.get_parameter("camera_topic").value)
 
@@ -60,6 +71,11 @@ class CameraImageProcessor(Node):
         self.sequence_publisher = self.create_publisher(
             String,
             str(self.get_parameter("sequence_topic").value),
+            10,
+        )
+        self.yolo_debug_publisher = self.create_publisher(
+            String,
+            str(self.get_parameter("yolo_debug_topic").value),
             10,
         )
 
@@ -83,6 +99,7 @@ class CameraImageProcessor(Node):
             ),
             image_size=self.image_size,
             device=device,
+            verbose=bool(self.get_parameter("yolo_verbose").value),
         )
 
         try:
@@ -119,11 +136,14 @@ class CameraImageProcessor(Node):
             raw_detections = self.run_detection(processed_frame)
             filtered_detections = filter_detections(raw_detections)
             sequence = build_sequence_from_detections(filtered_detections)
+            yolo_debug = self.build_yolo_debug(processed_frame, raw_detections)
             self.publish_detection_messages(
                 raw_detections,
                 filtered_detections,
                 sequence,
+                yolo_debug,
             )
+            self.save_debug_frame_if_needed(processed_frame, raw_detections)
 
         display_frame = processed_frame
         if raw_detections:
@@ -156,16 +176,31 @@ class CameraImageProcessor(Node):
             return []
 
         try:
-            return self.detector.detect(frame)
+            detections = self.detector.detect(frame)
+            self.last_yolo_debug = getattr(self.detector, "last_debug_info", {})
+            return detections
         except Exception as exc:
             self.get_logger().error(f"[YOLO] inference error: {exc}")
+            self.last_yolo_debug = {"error": str(exc)}
             return []
+
+    def build_yolo_debug(self, frame, raw_detections):
+        return {
+            "frame_count": self.frame_count,
+            "frame_shape": list(frame.shape),
+            "frame_min": int(frame.min()),
+            "frame_max": int(frame.max()),
+            "frame_mean": float(frame.mean()),
+            "raw_detection_count": len(raw_detections),
+            "yolo": self.last_yolo_debug,
+        }
 
     def publish_detection_messages(
         self,
         raw_detections,
         filtered_detections,
         sequence,
+        yolo_debug,
     ):
         self.raw_detection_publisher.publish(
             String(data=json.dumps(raw_detections, ensure_ascii=False))
@@ -176,6 +211,26 @@ class CameraImageProcessor(Node):
         self.sequence_publisher.publish(
             String(data=json.dumps(sequence, ensure_ascii=False))
         )
+        self.yolo_debug_publisher.publish(
+            String(data=json.dumps(yolo_debug, ensure_ascii=False))
+        )
+
+    def save_debug_frame_if_needed(self, frame, raw_detections):
+        if not self.debug_frame_dir:
+            return
+
+        if self.frame_count % self.debug_frame_interval != 0:
+            return
+
+        os.makedirs(self.debug_frame_dir, exist_ok=True)
+        base_path = os.path.join(
+            self.debug_frame_dir,
+            f"frame_{self.frame_count:06d}",
+        )
+        cv2.imwrite(f"{base_path}_input.jpg", frame)
+
+        annotated = self.draw_detections(frame, raw_detections)
+        cv2.imwrite(f"{base_path}_annotated.jpg", annotated)
 
     def draw_detections(self, frame, detections):
         annotated = frame.copy()

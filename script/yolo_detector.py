@@ -12,6 +12,7 @@ class YoloDetectionConfig:
     confidence_threshold: float = 0.5
     image_size: int = 640
     device: str | None = None
+    verbose: bool = False
 
 
 class YoloDetector:
@@ -24,6 +25,7 @@ class YoloDetector:
 
     def __init__(self, config: YoloDetectionConfig | None = None):
         self.config = config or YoloDetectionConfig()
+        self.last_debug_info: dict = {}
 
         try:
             from ultralytics import YOLO
@@ -41,13 +43,21 @@ class YoloDetector:
             imgsz=self.config.image_size,
             conf=self.config.confidence_threshold,
             device=self.config.device,
-            verbose=False,
+            verbose=self.config.verbose,
         )
 
         if not results:
+            self.last_debug_info = {
+                "result_count": 0,
+                "box_count": 0,
+                "summary": "no YOLO results returned",
+            }
             return []
 
-        return parse_ultralytics_result(results[0])
+        result = results[0]
+        detections = parse_ultralytics_result(result)
+        self.last_debug_info = summarize_ultralytics_result(result, detections)
+        return detections
 
 
 def parse_ultralytics_result(result: Any) -> list[dict]:
@@ -93,6 +103,30 @@ def parse_ultralytics_result(result: Any) -> list[dict]:
         )
 
     return detections
+
+
+def summarize_ultralytics_result(result: Any, detections: list[dict]) -> dict:
+    boxes = getattr(result, "boxes", None)
+    speed = getattr(result, "speed", {}) or {}
+    orig_shape = getattr(result, "orig_shape", None)
+
+    try:
+        yolo_summary = result.verbose()
+    except Exception:
+        yolo_summary = ""
+
+    return {
+        "result_count": 1,
+        "box_count": len(detections),
+        "orig_shape": list(orig_shape) if orig_shape else None,
+        "speed_ms": {
+            key: float(value)
+            for key, value in speed.items()
+        },
+        "yolo_summary": str(yolo_summary).strip(),
+        "has_boxes": boxes is not None,
+        "top_detections": detections[:10],
+    }
 
 
 def _to_list(value: Any) -> list:
