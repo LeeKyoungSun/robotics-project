@@ -1401,7 +1401,7 @@
         <pose>0 0 10 0 -0 0</pose>
       </light>
     </state>
-    <model name='objaverse_ball'>
+    <model name='sanity_ball'>
       <link name='link'>
         <inertial>
           <mass>1</mass>
@@ -1422,13 +1422,17 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://objaverse/ball/c94d08a3c24349bbbbd7213532cd05ee.glb</uri>
-              <scale>2.0 2.0 2.0</scale>
+              <uri>model://ball.dae</uri>
+              <scale>0.08 0.08 0.08</scale>
             </mesh>
           </geometry>
           <pose>0 0 0 0 -0 0</pose>
           <transparency>0</transparency>
           <cast_shadows>1</cast_shadows>
+          <material>
+            <ambient>1 0.35 0.05 1</ambient>
+            <diffuse>1 0.35 0.05 1</diffuse>
+          </material>
         </visual>
         <collision name='collision'>
           <laser_retro>0</laser_retro>
@@ -1490,7 +1494,7 @@
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.47 -0.60 0.35 0 0 0</pose>
     </model>
-    <model name='objaverse_bowl'>
+    <model name='sanity_bowl'>
       <link name='link'>
         <inertial>
           <mass>1</mass>
@@ -1511,13 +1515,17 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://objaverse/bowl/842e26f631d948b08fcf178b557aa99f.glb</uri>
-              <scale>2.0 2.0 2.0</scale>
+              <uri>model://bowl.obj</uri>
+              <scale>0.04 0.04 0.04</scale>
             </mesh>
           </geometry>
           <pose>0 0 0 0 -0 0</pose>
           <transparency>0</transparency>
           <cast_shadows>1</cast_shadows>
+          <material>
+            <ambient>0.95 0.95 0.95 1</ambient>
+            <diffuse>0.95 0.95 0.95 1</diffuse>
+          </material>
         </visual>
         <collision name='collision'>
           <pose>0 0 0 0 -0 0</pose>
@@ -1533,7 +1541,7 @@
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.20 -0.85 0.35 0 0 0</pose>
     </model>
-    <model name='objaverse_chair'>
+    <model name='sanity_chair'>
       <link name='link'>
         <inertial>
           <mass>1</mass>
@@ -1554,13 +1562,17 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://objaverse/chair/c5f49f97856c461a8192fb950ce23540.glb</uri>
-              <scale>1.5 1.5 1.5</scale>
+              <uri>model://chair.obj</uri>
+              <scale>0.015 0.015 0.015</scale>
             </mesh>
           </geometry>
           <pose>0 0 0 0 -0 0</pose>
           <transparency>0</transparency>
           <cast_shadows>1</cast_shadows>
+          <material>
+            <ambient>0.1 0.45 1 1</ambient>
+            <diffuse>0.1 0.45 1 1</diffuse>
+          </material>
         </visual>
         <collision name='collision'>
           <pose>0 0 0 0 -0 0</pose>
