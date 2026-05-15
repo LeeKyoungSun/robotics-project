@@ -1422,7 +1422,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://pet_robot_pkg/models/objaverse/ball/c94d08a3c24349bbbbd7213532cd05ee.glb</uri>
+              <uri>model://objaverse/ball/c94d08a3c24349bbbbd7213532cd05ee.glb</uri>
               <scale>0.35 0.35 0.35</scale>
             </mesh>
           </geometry>
@@ -1511,7 +1511,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://pet_robot_pkg/models/objaverse/bowl/842e26f631d948b08fcf178b557aa99f.glb</uri>
+              <uri>model://objaverse/bowl/842e26f631d948b08fcf178b557aa99f.glb</uri>
               <scale>0.45 0.45 0.45</scale>
             </mesh>
           </geometry>
@@ -1554,7 +1554,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://pet_robot_pkg/models/objaverse/chair/c5f49f97856c461a8192fb950ce23540.glb</uri>
+              <uri>model://objaverse/chair/c5f49f97856c461a8192fb950ce23540.glb</uri>
               <scale>0.55 0.55 0.55</scale>
             </mesh>
           </geometry>
