@@ -1516,7 +1516,7 @@
           <geometry>
             <mesh>
               <uri>model://chair.dae</uri>
-              <scale>0.05 0.05 0.05</scale>
+              <scale>0.0125 0.0125 0.0125</scale>
             </mesh>
           </geometry>
           <pose>0 0 0.25 0 -0 0</pose>
@@ -1581,7 +1581,7 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.47 -1.10 0 0 0 0</pose>
+      <pose>0.47 -1.10 0 0 0 -3.14159</pose>
     </model>
   </world>
 </sdf>
