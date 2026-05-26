@@ -1404,7 +1404,7 @@
     <include>
       <uri>model://dog</uri>
       <name>sanity_dog</name>
-      <pose>0.47 -0.85 0 0 0 -1.5708</pose>
+      <pose>1.30 0.40 0 0 0 -1.5708</pose>
     </include>
   </world>
 </sdf>
