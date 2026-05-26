@@ -14,8 +14,8 @@ targets:
     
   bowl_zone:
     frame_id: "map"
-    x: 0.47
-    y: -0.85
+    x: 0.0
+    y: -2.20
     yaw: 0.0
     description: "Food bowl position"
 
