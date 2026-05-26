@@ -758,12 +758,12 @@
     <include>
       <uri>model://chair</uri>
       <name>sanity_chair</name>
-      <pose>3.95 -1.75 0 0 0 2.3562</pose>
+      <pose>4.50 -1.0 0 0 0 2.3562</pose>
     </include>
     <include>
       <uri>model://potted_plant</uri>
       <name>sanity_potted_plant</name>
-      <pose>1.35 -0.75 0 0 0 0</pose>
+      <pose>4.35 -0.75 0 0 0 0</pose>
     </include>
   </world>
 </sdf>
