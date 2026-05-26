@@ -1,23 +1,22 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <model name="bed">
+  <model name="chair">
     <static>true</static>
     <link name="link">
       <pose>0 0 0 0 0 0</pose>
       <visual name="visual">
-        <pose>0 0 0.4583 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://bed/meshes/Full_Size_Bed_with_White_Sheets_Black_V1.obj</uri>
-            <scale>0.01 0.01 0.01</scale>
+            <uri>model://chair/meshes/13494_Folding_Chairs_v1_L3.obj</uri>
+            <scale>0.04 0.04 0.04</scale>
           </mesh>
         </geometry>
       </visual>
       <collision name="collision">
-        <pose>0 0 0.4583 0 0 0</pose>
+        <pose>0 0 0.51 0 0 0</pose>
         <geometry>
           <box>
-            <size>1.49 1.99 0.92</size>
+            <size>0.59 0.62 1.02</size>
           </box>
         </geometry>
       </collision>

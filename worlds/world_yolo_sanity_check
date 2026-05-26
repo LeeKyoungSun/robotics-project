@@ -1407,9 +1407,14 @@
       <pose>1.30 0.40 0 0 0 -1.5708</pose>
     </include>
     <include>
-      <uri>model://ball</uri>
-      <name>sanity_ball</name>
-      <pose>1.75 -0.20 0.25 0 0 0</pose>
+      <uri>model://bed</uri>
+      <name>sanity_bed</name>
+      <pose>2.60 -0.90 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://chair</uri>
+      <name>sanity_chair</name>
+      <pose>1.70 -1.35 0 0 0 1.5708</pose>
     </include>
   </world>
 </sdf>
