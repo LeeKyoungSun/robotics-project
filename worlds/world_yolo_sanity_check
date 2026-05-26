@@ -1406,5 +1406,10 @@
       <name>sanity_dog</name>
       <pose>1.30 0.40 0 0 0 -1.5708</pose>
     </include>
+    <include>
+      <uri>model://ball</uri>
+      <name>sanity_ball</name>
+      <pose>1.75 -0.20 0.25 0 0 0</pose>
+    </include>
   </world>
 </sdf>
