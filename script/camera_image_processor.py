@@ -31,6 +31,7 @@ class CameraImageProcessor(Node):
         self.declare_parameter("device", "")
         self.declare_parameter("enable_display", True)
         self.declare_parameter("run_every_n_frames", 1)
+        self.declare_parameter("detection_hold_frames", 20)
         self.declare_parameter("yolo_verbose", False)
         self.declare_parameter("debug_frame_dir", "")
         self.declare_parameter("debug_frame_interval", 30)
@@ -42,6 +43,8 @@ class CameraImageProcessor(Node):
         self.bridge = CvBridge()
         self.latest_frame = None
         self.frame_count = 0
+        self.last_raw_detections = []
+        self.last_detection_frame_count = -1
         self.detector_error_logged = False
         self.last_yolo_debug = {}
 
@@ -50,6 +53,10 @@ class CameraImageProcessor(Node):
         self.run_every_n_frames = max(
             1,
             int(self.get_parameter("run_every_n_frames").value),
+        )
+        self.detection_hold_frames = max(
+            0,
+            int(self.get_parameter("detection_hold_frames").value),
         )
         self.debug_frame_dir = str(self.get_parameter("debug_frame_dir").value)
         self.debug_frame_interval = max(
@@ -145,6 +152,10 @@ class CameraImageProcessor(Node):
 
         if self.should_run_detection():
             raw_detections = self.run_detection(processed_frame)
+            if raw_detections:
+                self.last_raw_detections = raw_detections
+                self.last_detection_frame_count = self.frame_count
+
             filtered_detections = filter_detections(raw_detections)
             sequence = build_sequence_from_detections(filtered_detections)
             yolo_debug = self.build_yolo_debug(processed_frame, raw_detections)
@@ -157,8 +168,9 @@ class CameraImageProcessor(Node):
             self.save_debug_frame_if_needed(processed_frame, raw_detections)
 
         display_frame = processed_frame
-        if raw_detections:
-            display_frame = self.draw_detections(processed_frame, raw_detections)
+        display_detections = self.get_display_detections()
+        if display_detections:
+            display_frame = self.draw_detections(processed_frame, display_detections)
 
         self.get_logger().info(
             "[CAMERA] frame received: "
@@ -171,6 +183,16 @@ class CameraImageProcessor(Node):
         if self.enable_display:
             cv2.imshow("camera_image_processor", display_frame)
             cv2.waitKey(1)
+
+    def get_display_detections(self):
+        if not self.last_raw_detections:
+            return []
+
+        detection_age = self.frame_count - self.last_detection_frame_count
+        if detection_age > self.detection_hold_frames:
+            return []
+
+        return self.last_raw_detections
 
     def preprocess_frame(self, frame):
         resized_frame = cv2.resize(frame, (self.image_size, self.image_size))
