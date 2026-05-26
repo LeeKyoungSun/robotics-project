@@ -66,11 +66,11 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "scan_angular_speed",
-                default_value="0.35",
+                default_value="0.18",
             ),
             DeclareLaunchArgument(
                 "scan_duration_sec",
-                default_value="18.0",
+                default_value="0.0",
             ),
             DeclareLaunchArgument(
                 "scan_start_delay_sec",

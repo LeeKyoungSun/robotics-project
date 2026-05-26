@@ -13,8 +13,8 @@ class InitialScanRotator(Node):
         super().__init__("initial_scan_rotator")
 
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
-        self.declare_parameter("angular_speed", 0.35)
-        self.declare_parameter("duration_sec", 18.0)
+        self.declare_parameter("angular_speed", 0.18)
+        self.declare_parameter("duration_sec", 0.0)
         self.declare_parameter("start_delay_sec", 3.0)
         self.declare_parameter("publish_rate_hz", 10.0)
 
@@ -32,14 +32,22 @@ class InitialScanRotator(Node):
 
         self.publisher = self.create_publisher(Twist, self.cmd_vel_topic, 10)
         self.start_time = time.monotonic() + self.start_delay_sec
+        self.continuous_scan = self.duration_sec <= 0.0
         self.stop_publish_count = 0
         self.timer = self.create_timer(1.0 / publish_rate_hz, self.tick)
 
-        self.get_logger().info(
-            "[INITIAL_SCAN] waiting "
-            f"{self.start_delay_sec:.1f}s, then rotating for "
-            f"{self.duration_sec:.1f}s at angular.z={self.angular_speed:.2f}"
-        )
+        if self.continuous_scan:
+            self.get_logger().info(
+                "[INITIAL_SCAN] waiting "
+                f"{self.start_delay_sec:.1f}s, then rotating continuously "
+                f"at angular.z={self.angular_speed:.2f}"
+            )
+        else:
+            self.get_logger().info(
+                "[INITIAL_SCAN] waiting "
+                f"{self.start_delay_sec:.1f}s, then rotating for "
+                f"{self.duration_sec:.1f}s at angular.z={self.angular_speed:.2f}"
+            )
 
     def tick(self):
         now = time.monotonic()
@@ -49,7 +57,7 @@ class InitialScanRotator(Node):
             return
 
         elapsed = now - self.start_time
-        if elapsed < self.duration_sec:
+        if self.continuous_scan or elapsed < self.duration_sec:
             command.angular.z = self.angular_speed
             self.publisher.publish(command)
             return
