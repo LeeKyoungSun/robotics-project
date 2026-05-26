@@ -18,12 +18,12 @@ class TargetResolver:
         "bowl": "bowl_zone",
         "bed": "bed_zone",
         "chair": "chair_zone",
+        "cat": "cat_zone",
         "potted_plant": "potted_plant_zone",
     }
 
     DYNAMIC_OBJECTS = {
         "dog",
-        "cat",
         "person",
     }
 
@@ -120,6 +120,7 @@ if __name__ == "__main__":
         "bowl",
         "bed",
         "chair",
+        "cat",
         "potted_plant",
     ]
 

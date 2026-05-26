@@ -69,6 +69,7 @@ setup(
             'camera_image_processor = script.camera_image_processor:main',
             'vision_sequence_executor = script.vision_sequence_executor:main',
             'run_yolo_inference = script.run_yolo_inference:main',
+            'initial_scan_rotator = script.initial_scan_rotator:main',
         ],
     },
 )

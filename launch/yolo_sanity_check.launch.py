@@ -4,13 +4,19 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command
+from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    enable_initial_scan = LaunchConfiguration("enable_initial_scan")
+    scan_angular_speed = LaunchConfiguration("scan_angular_speed")
+    scan_duration_sec = LaunchConfiguration("scan_duration_sec")
+    scan_start_delay_sec = LaunchConfiguration("scan_start_delay_sec")
+
     package_share_dir = get_package_share_directory("pet_robot_pkg")
     turtlebot3_share_dir = get_package_share_directory("turtlebot3_gazebo")
     turtlebot3_description_dir = get_package_share_directory("turtlebot3_description")
@@ -54,6 +60,22 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "enable_initial_scan",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "scan_angular_speed",
+                default_value="0.18",
+            ),
+            DeclareLaunchArgument(
+                "scan_duration_sec",
+                default_value="0.0",
+            ),
+            DeclareLaunchArgument(
+                "scan_start_delay_sec",
+                default_value="3.0",
+            ),
             SetEnvironmentVariable("GAZEBO_MODEL_PATH", gazebo_model_paths),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(gazebo_launch),
@@ -68,6 +90,20 @@ def generate_launch_description():
                     {
                         "use_sim_time": True,
                         "robot_description": robot_description,
+                    }
+                ],
+            ),
+            Node(
+                package="pet_robot_pkg",
+                executable="initial_scan_rotator",
+                name="initial_scan_rotator",
+                output="screen",
+                condition=IfCondition(enable_initial_scan),
+                parameters=[
+                    {
+                        "angular_speed": scan_angular_speed,
+                        "duration_sec": scan_duration_sec,
+                        "start_delay_sec": scan_start_delay_sec,
                     }
                 ],
             ),
