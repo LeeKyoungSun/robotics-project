@@ -112,7 +112,7 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <model name='turtlebot3_waffle_pi'>
-      <pose>-0.85 -1.30 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <link name='base_footprint'>
         <self_collide>0</self_collide>
         <inertial>
@@ -743,27 +743,27 @@
     <include>
       <uri>model://dog</uri>
       <name>sanity_dog</name>
-      <pose>2.00 0.35 0 0 0 -0.7854</pose>
+      <pose>2.00 0.90 0 0 0 -0.7854</pose>
     </include>
     <include>
       <uri>model://cat</uri>
       <name>sanity_cat</name>
-      <pose>1.75 -0.25 0 0 0 -1.5708</pose>
+      <pose>1.80 -1.35 0 0 0 -1.5708</pose>
     </include>
     <include>
       <uri>model://bed</uri>
       <name>sanity_bed</name>
-      <pose>3.20 -0.95 0 0 0 0</pose>
+      <pose>-2.40 1.70 0 0 0 3.1416</pose>
     </include>
     <include>
       <uri>model://chair</uri>
       <name>sanity_chair</name>
-      <pose>4.50 -1.0 0 0 0 2.3562</pose>
+      <pose>-1.80 -1.50 0 0 0 2.3562</pose>
     </include>
     <include>
       <uri>model://potted_plant</uri>
       <name>sanity_potted_plant</name>
-      <pose>4.35 -0.75 0 0 0 0</pose>
+      <pose>0.10 2.30 0 0 0 0</pose>
     </include>
   </world>
 </sdf>

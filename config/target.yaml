@@ -21,22 +21,22 @@ targets:
 
   bed_zone:
     frame_id: "map"
-    x: 3.20
-    y: -0.95
-    yaw: 0.0
+    x: -2.40
+    y: 1.70
+    yaw: 3.1416
     description: "Bed location"
 
   chair_zone:
     frame_id: "map"
-    x: 3.95
-    y: -1.75
+    x: -1.80
+    y: -1.50
     yaw: 2.3562
     description: "Chair area"
 
   cat_zone:
     frame_id: "map"
-    x: 1.75
-    y: -0.25
+    x: 1.80
+    y: -1.35
     yaw: -1.5708
     description: "Cat location for sanity check"
 
@@ -48,12 +48,9 @@ targets:
     description: "Safe observation point for dangerous object"
 
   potted_plant_zone:
-    # potted_plant is observe-only (approach: false, follow: false)
-    # Use the safe observe zone rather than navigating directly to the plant.
-
     frame_id: "map"
-    x: 1.35
-    y: -0.75
+    x: 0.10
+    y: 2.30
     yaw: 0.0
     description: "Potted plant observation-only zone"
 
