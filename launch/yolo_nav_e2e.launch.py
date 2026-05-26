@@ -10,7 +10,11 @@ def generate_launch_description():
     camera_topic = LaunchConfiguration("camera_topic")
     model_path = LaunchConfiguration("model_path")
     confidence_threshold = LaunchConfiguration("confidence_threshold")
+    image_size = LaunchConfiguration("image_size")
     enable_display = LaunchConfiguration("enable_display")
+    inference_period_sec = LaunchConfiguration("inference_period_sec")
+    display_fps = LaunchConfiguration("display_fps")
+    detection_hold_frames = LaunchConfiguration("detection_hold_frames")
     execute_once = LaunchConfiguration("execute_once")
 
     return LaunchDescription(
@@ -28,8 +32,24 @@ def generate_launch_description():
                 default_value="0.25",
             ),
             DeclareLaunchArgument(
+                "image_size",
+                default_value="416",
+            ),
+            DeclareLaunchArgument(
                 "enable_display",
                 default_value="false",
+            ),
+            DeclareLaunchArgument(
+                "inference_period_sec",
+                default_value="0.35",
+            ),
+            DeclareLaunchArgument(
+                "display_fps",
+                default_value="10.0",
+            ),
+            DeclareLaunchArgument(
+                "detection_hold_frames",
+                default_value="20",
             ),
             DeclareLaunchArgument(
                 "execute_once",
@@ -45,7 +65,11 @@ def generate_launch_description():
                         "camera_topic": camera_topic,
                         "model_path": model_path,
                         "confidence_threshold": confidence_threshold,
+                        "image_size": image_size,
                         "enable_display": enable_display,
+                        "inference_period_sec": inference_period_sec,
+                        "display_fps": display_fps,
+                        "detection_hold_frames": detection_hold_frames,
                     }
                 ],
             ),

@@ -1,7 +1,7 @@
 # Static objects: ball, bed, bowl, potted_plant, chair
 # Dynamic objects: person, dog, cat
 
-# !!! x, y should be updated to actual positions after map creation !!!
+# Static object positions should match the world model poses.
 
 
 targets:
@@ -21,16 +21,16 @@ targets:
 
   bed_zone:
     frame_id: "map"
-    x: 5.0
-    y: 13.0
+    x: 2.60
+    y: -0.90
     yaw: 0.0
     description: "Bed location"
 
   chair_zone:
     frame_id: "map"
-    x: 0.47
-    y: -1.10
-    yaw: 0.0
+    x: 1.35
+    y: -1.70
+    yaw: 1.5708
     description: "Chair area"
 
   safe_observe_zone:
@@ -45,8 +45,8 @@ targets:
     # Use the safe observe zone rather than navigating directly to the plant.
 
     frame_id: "map"
-    x: 2.0
-    y: 1.0
+    x: 2.10
+    y: 1.00
     yaw: 0.0
     description: "Potted plant observation-only zone"
 
