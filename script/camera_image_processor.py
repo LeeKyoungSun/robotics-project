@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -30,8 +31,10 @@ class CameraImageProcessor(Node):
         self.declare_parameter("image_size", 640)
         self.declare_parameter("device", "")
         self.declare_parameter("enable_display", True)
-        self.declare_parameter("run_every_n_frames", 1)
+        self.declare_parameter("inference_period_sec", 0.35)
+        self.declare_parameter("display_fps", 10.0)
         self.declare_parameter("detection_hold_frames", 20)
+        self.declare_parameter("log_interval_sec", 2.0)
         self.declare_parameter("yolo_verbose", False)
         self.declare_parameter("debug_frame_dir", "")
         self.declare_parameter("debug_frame_interval", 30)
@@ -47,16 +50,26 @@ class CameraImageProcessor(Node):
         self.last_detection_frame_count = -1
         self.detector_error_logged = False
         self.last_yolo_debug = {}
+        self.inference_busy = False
+        self.last_log_time = 0.0
 
         self.image_size = int(self.get_parameter("image_size").value)
         self.enable_display = self.get_bool_parameter("enable_display")
-        self.run_every_n_frames = max(
-            1,
-            int(self.get_parameter("run_every_n_frames").value),
+        self.inference_period_sec = max(
+            0.05,
+            float(self.get_parameter("inference_period_sec").value),
+        )
+        self.display_period_sec = 1.0 / max(
+            1.0,
+            float(self.get_parameter("display_fps").value),
         )
         self.detection_hold_frames = max(
             0,
             int(self.get_parameter("detection_hold_frames").value),
+        )
+        self.log_interval_sec = max(
+            0.0,
+            float(self.get_parameter("log_interval_sec").value),
         )
         self.debug_frame_dir = str(self.get_parameter("debug_frame_dir").value)
         self.debug_frame_interval = max(
@@ -90,12 +103,27 @@ class CameraImageProcessor(Node):
             Image,
             camera_topic,
             self.image_callback,
-            10,
+            1,
         )
 
         self.detector = self.create_detector()
+        cv2.setNumThreads(1)
+        self.inference_timer = self.create_timer(
+            self.inference_period_sec,
+            self.process_latest_frame,
+        )
+        self.display_timer = None
+        if self.enable_display:
+            self.display_timer = self.create_timer(
+                self.display_period_sec,
+                self.update_display,
+            )
 
-        self.get_logger().info(f"[CAMERA] subscribed to {camera_topic}")
+        self.get_logger().info(
+            "[CAMERA] subscribed to "
+            f"{camera_topic}; inference_period={self.inference_period_sec:.2f}s; "
+            f"display={'on' if self.enable_display else 'off'}"
+        )
 
     def create_detector(self):
         device = str(self.get_parameter("device").value).strip() or None
@@ -142,15 +170,21 @@ class CameraImageProcessor(Node):
             self.get_logger().error(f"[CAMERA] cv_bridge error: {e}")
             return
 
-        processed_frame = self.preprocess_frame(frame)
-        self.latest_frame = processed_frame
+        self.latest_frame = frame
         self.frame_count += 1
+
+    def process_latest_frame(self):
+        if self.latest_frame is None or self.inference_busy:
+            return
+
+        self.inference_busy = True
+        processed_frame = self.preprocess_frame(self.latest_frame)
 
         raw_detections = []
         filtered_detections = []
         sequence = []
 
-        if self.should_run_detection():
+        try:
             raw_detections = self.run_detection(processed_frame)
             if raw_detections:
                 self.last_raw_detections = raw_detections
@@ -166,23 +200,27 @@ class CameraImageProcessor(Node):
                 yolo_debug,
             )
             self.save_debug_frame_if_needed(processed_frame, raw_detections)
+            self.log_detection_summary(
+                processed_frame,
+                raw_detections,
+                filtered_detections,
+                sequence,
+            )
+        finally:
+            self.inference_busy = False
 
+    def update_display(self):
+        if self.latest_frame is None:
+            return
+
+        processed_frame = self.preprocess_frame(self.latest_frame)
         display_frame = processed_frame
         display_detections = self.get_display_detections()
         if display_detections:
             display_frame = self.draw_detections(processed_frame, display_detections)
 
-        self.get_logger().info(
-            "[CAMERA] frame received: "
-            f"shape={processed_frame.shape}, "
-            f"raw_detections={len(raw_detections)}, "
-            f"filtered_detections={len(filtered_detections)}, "
-            f"sequence_steps={len(sequence)}"
-        )
-
-        if self.enable_display:
-            cv2.imshow("camera_image_processor", display_frame)
-            cv2.waitKey(1)
+        cv2.imshow("camera_image_processor", display_frame)
+        cv2.waitKey(1)
 
     def get_display_detections(self):
         if not self.last_raw_detections:
@@ -194,12 +232,29 @@ class CameraImageProcessor(Node):
 
         return self.last_raw_detections
 
+    def log_detection_summary(
+        self,
+        processed_frame,
+        raw_detections,
+        filtered_detections,
+        sequence,
+    ):
+        now = time.monotonic()
+        if now - self.last_log_time < self.log_interval_sec:
+            return
+
+        self.last_log_time = now
+        self.get_logger().info(
+            "[CAMERA] frame received: "
+            f"shape={processed_frame.shape}, "
+            f"raw_detections={len(raw_detections)}, "
+            f"filtered_detections={len(filtered_detections)}, "
+            f"sequence_steps={len(sequence)}"
+        )
+
     def preprocess_frame(self, frame):
         resized_frame = cv2.resize(frame, (self.image_size, self.image_size))
         return resized_frame
-
-    def should_run_detection(self):
-        return self.frame_count % self.run_every_n_frames == 0
 
     def run_detection(self, frame):
         if self.detector is None:
