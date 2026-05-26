@@ -28,9 +28,22 @@ def generate_launch_description():
     robot_description = Command(["xacro ", urdf_path])
     model_path = os.path.join(turtlebot3_share_dir, "models")
     package_model_path = os.path.join(package_share_dir, "models")
+    source_model_path = os.path.abspath(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "models")
+    )
     gazebo_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
+    candidate_model_paths = [
+        model_path,
+        package_model_path,
+        source_model_path,
+        gazebo_model_path,
+    ]
+    unique_model_paths = []
+    for path in candidate_model_paths:
+        if path and path not in unique_model_paths:
+            unique_model_paths.append(path)
     gazebo_model_paths = os.pathsep.join(
-        path for path in [model_path, package_model_path, gazebo_model_path] if path
+        path for path in unique_model_paths if path
     )
 
     gazebo_launch = os.path.join(
