@@ -2,13 +2,23 @@
 
 from __future__ import annotations
 
+import os
+
+os.environ["ROS_DOMAIN_ID"] = "0"
+os.environ["RMW_IMPLEMENTATION"] = "rmw_fastrtps_cpp"
+os.environ["ROS_LOCALHOST_ONLY"] = "0"
+os.environ["ROS_DISABLE_LOANED_MESSAGES"] = "1"
+os.environ["FASTRTPS_DEFAULT_PROFILES_FILE"] = (
+    os.path.expanduser("~/ros2_clean_ws/fastdds_no_shm.xml")
+)
+
+import rclpy
+
 import json
 import subprocess
 import tempfile
 import time
 from pathlib import Path
-
-import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -19,14 +29,6 @@ except ImportError:
 
 
 class VisionSequenceExecutorNode(Node):
-    """
-    Bridge vision output to the sequence executor in a separate process.
-
-    SequenceExecutor/Nav2GoalSender spin their own rclpy node while waiting for
-    Nav2 action futures. Keeping that blocking navigation in a subprocess avoids
-    corrupting this subscriber node's executor/context.
-    """
-
     def __init__(self):
         super().__init__("vision_sequence_executor")
 
@@ -37,16 +39,18 @@ class VisionSequenceExecutorNode(Node):
         self.declare_parameter("cooldown_sec", 5.0)
         self.declare_parameter("ignore_empty_sequences", True)
         self.declare_parameter("poll_period_sec", 0.2)
+        self.declare_parameter("workspace_path", "/home/lks/ros2_clean_ws")
 
         self.execute_once = self.get_bool_parameter("execute_once")
-        self.deduplicate_sequences = self.get_bool_parameter(
-            "deduplicate_sequences"
-        )
+        self.deduplicate_sequences = self.get_bool_parameter("deduplicate_sequences")
         self.cooldown_sec = max(float(self.get_parameter("cooldown_sec").value), 0.0)
-        self.ignore_empty_sequences = self.get_bool_parameter(
-            "ignore_empty_sequences"
+        self.ignore_empty_sequences = self.get_bool_parameter("ignore_empty_sequences")
+        self.workspace_path = str(self.get_parameter("workspace_path").value)
+
+        poll_period_sec = max(
+            float(self.get_parameter("poll_period_sec").value),
+            0.05,
         )
-        poll_period_sec = max(float(self.get_parameter("poll_period_sec").value), 0.05)
 
         self._process = None
         self._sequence_file = None
@@ -65,13 +69,18 @@ class VisionSequenceExecutorNode(Node):
             execution_status_topic,
             10,
         )
+
         self.subscription = self.create_subscription(
             String,
             action_sequence_topic,
             self.sequence_callback,
             10,
         )
-        self.poll_timer = self.create_timer(poll_period_sec, self.poll_process)
+
+        self.poll_timer = self.create_timer(
+            poll_period_sec,
+            self.poll_process,
+        )
 
         self.get_logger().info(
             "[VISION_EXECUTOR] subscribed to "
@@ -89,9 +98,26 @@ class VisionSequenceExecutorNode(Node):
 
         return bool(value)
 
+    def extract_sequence(self, payload):
+        """
+        Supports both:
+        1. {"sequence": [...]}
+        2. [...]
+        """
+
+        if isinstance(payload, dict):
+            sequence = payload.get("sequence", [])
+            return sequence
+
+        if isinstance(payload, list):
+            return payload
+
+        return None
+
     def sequence_callback(self, msg: String):
         try:
-            sequence = json.loads(msg.data)
+            payload = json.loads(msg.data)
+
         except json.JSONDecodeError as exc:
             self.publish_status(
                 "invalid_json",
@@ -101,12 +127,23 @@ class VisionSequenceExecutorNode(Node):
             )
             return
 
+        sequence = self.extract_sequence(payload)
+
+        if sequence is None:
+            self.publish_status(
+                "invalid_payload",
+                [],
+                ActionStatus.FAILED.value,
+                message="payload must be dict with sequence key or list",
+            )
+            return
+
         if not isinstance(sequence, list):
             self.publish_status(
                 "invalid_sequence",
                 [],
                 ActionStatus.FAILED.value,
-                message="action sequence payload must be a list",
+                message="sequence must be list",
             )
             return
 
@@ -117,7 +154,9 @@ class VisionSequenceExecutorNode(Node):
         now = time.monotonic()
 
         if self._process is not None:
-            self.get_logger().info("[VISION_EXECUTOR] already executing; skipped")
+            self.get_logger().info(
+                "[VISION_EXECUTOR] already executing; skipped"
+            )
             return
 
         if self.execute_once and self._has_executed:
@@ -133,6 +172,9 @@ class VisionSequenceExecutorNode(Node):
         self.start_sequence_process(sequence, sequence_key, now)
 
     def start_sequence_process(self, sequence, sequence_key, now):
+
+        sequence = self.clean_params(sequence)
+
         sequence_file = tempfile.NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
@@ -140,22 +182,37 @@ class VisionSequenceExecutorNode(Node):
             prefix="vision_sequence_",
             delete=False,
         )
+
         with sequence_file:
             json.dump(sequence, sequence_file, ensure_ascii=False)
 
-        command = [
-            "ros2",
-            "run",
-            "pet_robot_pkg",
-            "sequence_executor",
-            "--",
-            "--sequence-file",
-            sequence_file.name,
-            "--sequence-name",
-            f"vision_{int(time.time())}",
-        ]
+        command = (
+            "source /opt/ros/humble/setup.bash && "
+            f"source {self.workspace_path}/install/setup.bash && "
+            f"python3 {self.workspace_path}/script/sequence_executor.py "
+            f"--sequence-file {sequence_file.name} "
+            f"--sequence-name vision_{int(time.time())}"
+        )
 
-        self._process = subprocess.Popen(command)
+        env = os.environ.copy()
+
+        env["ROS_DOMAIN_ID"] = "0"
+        env["RMW_IMPLEMENTATION"] = "rmw_fastrtps_cpp"
+
+        env["FASTRTPS_DEFAULT_PROFILES_FILE"] = (
+            f"{self.workspace_path}/fastdds_no_shm.xml"
+        )
+
+        env["ROS_LOCALHOST_ONLY"] = "0"
+        env["ROS_DISABLE_LOANED_MESSAGES"] = "1"
+
+        self._process = subprocess.Popen(
+            command,
+            shell=True,
+            executable="/bin/bash",
+            env=env,
+        )
+
         self._sequence_file = sequence_file.name
         self._current_sequence = sequence
         self._last_sequence_key = sequence_key
@@ -165,22 +222,30 @@ class VisionSequenceExecutorNode(Node):
             "[VISION_EXECUTOR] started sequence process: "
             f"pid={self._process.pid} steps={len(sequence)}"
         )
-        self.publish_status("started", sequence, ActionStatus.RUNNING.value)
+
+        self.publish_status(
+            "started",
+            sequence,
+            ActionStatus.RUNNING.value,
+        )
 
     def poll_process(self):
         if self._process is None:
             return
 
         return_code = self._process.poll()
+
         if return_code is None:
             return
 
         sequence = self._current_sequence
+
         status = (
             ActionStatus.SUCCESS.value
             if return_code == 0
             else ActionStatus.FAILED.value
         )
+
         self.publish_status(
             "finished",
             sequence,
@@ -196,6 +261,7 @@ class VisionSequenceExecutorNode(Node):
         if self._sequence_file:
             try:
                 Path(self._sequence_file).unlink(missing_ok=True)
+
             except OSError as exc:
                 self.get_logger().warn(
                     f"[VISION_EXECUTOR] failed to remove temp file: {exc}"
@@ -206,13 +272,7 @@ class VisionSequenceExecutorNode(Node):
         self._current_sequence = []
         self._has_executed = True
 
-    def publish_status(
-        self,
-        event: str,
-        sequence: list,
-        status: str,
-        message: str = "",
-    ):
+    def publish_status(self, event, sequence, status, message=""):
         payload = {
             "event": event,
             "status": status,
@@ -220,15 +280,39 @@ class VisionSequenceExecutorNode(Node):
             "sequence": sequence,
             "message": message,
         }
+
         self.status_publisher.publish(
-            String(data=json.dumps(payload, ensure_ascii=False))
+            String(
+                data=json.dumps(payload, ensure_ascii=False)
+            )
         )
 
     def destroy_node(self):
-        if self._process is not None and self._process.poll() is None:
+        if (
+            self._process is not None
+            and self._process.poll() is None
+        ):
             self._process.terminate()
 
         super().destroy_node()
+    
+    def clean_params(self, sequence):
+        cleaned_sequence = []
+
+        for step in sequence:
+            cleaned_step = dict(step)
+            params = cleaned_step.get("params", {})
+
+            if isinstance(params, dict):
+                cleaned_step["params"] = {
+                    key: value
+                    for key, value in params.items()
+                    if value is not None
+                }
+
+            cleaned_sequence.append(cleaned_step)
+
+        return cleaned_sequence
 
 
 def main(args=None):
@@ -237,8 +321,10 @@ def main(args=None):
 
     try:
         rclpy.spin(node)
+
     except KeyboardInterrupt:
         pass
+
     finally:
         node.destroy_node()
         rclpy.shutdown()

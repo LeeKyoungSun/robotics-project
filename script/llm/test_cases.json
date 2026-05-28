@@ -1,0 +1,296 @@
+[
+  {
+    "scenario": "feeding",
+    "user_text": "강아지 밥 주는 상황을 수행해줘",
+    "detected_labels": ["bowl", "dog"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "approach",
+        "object": "bowl",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "wait",
+        "object": null,
+        "params": {
+          "duration_sec": 2.0
+        }
+      },
+      {
+        "step_id": 3,
+        "action": "observe",
+        "object": "dog",
+        "params": {
+          "duration_sec": 5.0
+        }
+      },
+      {
+        "step_id": 4,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "feeding scenario completed"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "play",
+    "user_text": "강아지가 심심해 보이니까 놀아줘",
+    "detected_labels": ["ball", "dog"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "approach",
+        "object": "ball",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "observe",
+        "object": "dog",
+        "params": {
+          "duration_sec": 5.0
+        }
+      },
+      {
+        "step_id": 3,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "play scenario completed"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "potted_plant_safety",
+    "user_text": "화분 근처를 확인해줘",
+    "detected_labels": ["potted_plant"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "observe",
+        "object": "potted_plant",
+        "params": {
+          "duration_sec": 5.0
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "potted plant is observe-only target. approach blocked for safety"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "static_multi_target",
+    "user_text": "그릇, 침대, 의자를 순서대로 확인해줘",
+    "detected_labels": ["bowl", "bed", "chair"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "approach",
+        "object": "bowl",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "approach",
+        "object": "bed",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 3,
+        "action": "approach",
+        "object": "chair",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "invalid_potted_plant_approach",
+    "user_text": "화분으로 가까이 가줘",
+    "detected_labels": ["potted_plant"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "observe",
+        "object": "potted_plant",
+        "params": {
+          "duration_sec": 5.0
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "potted plant is observe-only target. approach blocked for safety"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "feeding_no_bowl_detected",
+    "user_text": "강아지 밥 챙겨줘",
+    "detected_labels": ["dog"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "approach",
+        "object": "bowl",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "wait",
+        "object": null,
+        "params": {
+          "duration_sec": 2.0
+        }
+      },
+      {
+        "step_id": 3,
+        "action": "observe",
+        "object": "dog",
+        "params": {
+          "duration_sec": 5.0
+        }
+      },
+      {
+        "step_id": 4,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "feeding scenario completed"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "pet_monitoring",
+    "user_text": "강아지 상태만 확인하고 알려줘",
+    "detected_labels": ["dog"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "observe",
+        "object": "dog",
+        "params": {
+          "duration_sec": 5.0
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "pet monitoring completed"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "bed_check",
+    "user_text": "침대 쪽을 확인해줘",
+    "detected_labels": ["bed"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "approach",
+        "object": "bed",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "bed check completed"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "chair_check",
+    "user_text": "의자 쪽을 확인해줘",
+    "detected_labels": ["chair"],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "approach",
+        "object": "chair",
+        "params": {
+          "timeout_sec": 60.0,
+          "goal_tolerance_m": 0.25,
+          "retry_count": 2
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "chair check completed"
+        }
+      }
+    ]
+  },
+  {
+    "scenario": "unknown_visible_object",
+    "user_text": "보이는 물체를 확인해줘",
+    "detected_labels": [],
+    "expected_sequence": [
+      {
+        "step_id": 1,
+        "action": "wait",
+        "object": null,
+        "params": {
+          "duration_sec": 2.0
+        }
+      },
+      {
+        "step_id": 2,
+        "action": "report",
+        "object": null,
+        "params": {
+          "message": "no valid target detected"
+        }
+      }
+    ]
+  }
+]
