@@ -743,11 +743,11 @@
     <include>
       <uri>model://dog_v1</uri>
       <name>sanity_dog_v1</name>
-      <pose>2.00 0.90 0 0 0 -0.7854</pose>
+      <pose>2.00 0.90 0 0 0 0.7854</pose>
     </include>
     <include>
-      <uri>model://cat_v1</uri>
-      <name>sanity_cat_v1</name>
+      <uri>model://cat</uri>
+      <name>sanity_cat</name>
       <pose>1.80 -1.35 0 0 0 -1.5708</pose>
     </include>
     <include>
