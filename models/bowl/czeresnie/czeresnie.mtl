@@ -1,0 +1,11 @@
+newmtl czeresnie
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+illum 2
+Ka 0.6500 0.1200 0.0800
+Kd 0.6500 0.1200 0.0800
+Ks 0.0500 0.0500 0.0500
+map_Ka 1.jpg
+map_Kd 1.jpg

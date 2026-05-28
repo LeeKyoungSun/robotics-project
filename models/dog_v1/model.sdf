@@ -1,23 +1,22 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <model name="potted_plant">
+  <model name="dog_v1">
     <static>true</static>
     <link name="link">
       <pose>0 0 0 0 0 0</pose>
       <visual name="visual">
-        <pose>0 0 0 1.5708 0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://potted_plant/meshes/eb_house_plant_01.obj</uri>
-            <scale>0.01 0.01 0.01</scale>
+            <uri>model://dog_v1/Australian_Cattle_Dog_v1_L3.123c9c6a5764-399b-4e86-9897-6bcb08b5e8ed/13463_Australian_Cattle_Dog_v3.obj</uri>
+            <scale>0.0166667 0.0166667 0.0166667</scale>
           </mesh>
         </geometry>
       </visual>
       <collision name="collision">
-        <pose>0 0 0.18 0 0 0</pose>
+        <pose>0 -0.0468 0.2189 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.40 0.48 0.35</size>
+            <size>0.16 0.64 0.45</size>
           </box>
         </geometry>
       </collision>
