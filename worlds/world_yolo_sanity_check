@@ -746,9 +746,14 @@
       <pose>2.00 0.90 0 0 0 -0.7854</pose>
     </include>
     <include>
-      <uri>model://cat</uri>
-      <name>sanity_cat</name>
+      <uri>model://cat_v1</uri>
+      <name>sanity_cat_v1</name>
       <pose>1.80 -1.35 0 0 0 -1.5708</pose>
+    </include>
+    <include>
+      <uri>model://man</uri>
+      <name>sanity_man</name>
+      <pose>-0.95 2.15 0 0 0 1.5708</pose>
     </include>
     <include>
       <uri>model://bed</uri>
