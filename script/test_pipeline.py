@@ -8,6 +8,9 @@ import yaml
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # Config 파일 경로
 CONFIG_DIR = Path(__file__).parent.parent / "config"
 
@@ -25,27 +28,27 @@ class RobotTestPipeline:
     def load_configs(self):
         """설정 파일 로드"""
         try:
-            with open(CONFIG_DIR / "rules.yaml") as f:
+            with open(CONFIG_DIR / "rules.yaml", encoding="utf-8") as f:
                 self.rules = yaml.safe_load(f)
             print("✓ rules.yaml loaded")
 
-            with open(CONFIG_DIR / "object.yaml") as f:
+            with open(CONFIG_DIR / "object.yaml", encoding="utf-8") as f:
                 self.objects = yaml.safe_load(f)
             print("✓ object.yaml loaded")
 
-            with open(CONFIG_DIR / "action.yaml") as f:
+            with open(CONFIG_DIR / "action.yaml", encoding="utf-8") as f:
                 self.actions = yaml.safe_load(f)
             print("✓ action.yaml loaded")
 
-            with open(CONFIG_DIR / "mapping.yaml") as f:
+            with open(CONFIG_DIR / "mapping.yaml", encoding="utf-8") as f:
                 self.mapping = yaml.safe_load(f)
             print("✓ mapping.yaml loaded")
 
-            with open(CONFIG_DIR / "target.yaml") as f:
+            with open(CONFIG_DIR / "target.yaml", encoding="utf-8") as f:
                 self.targets = yaml.safe_load(f)
             print("✓ target.yaml loaded")
 
-            with open(CONFIG_DIR / "navigation_policy.yaml") as f:
+            with open(CONFIG_DIR / "navigation_policy.yaml", encoding="utf-8") as f:
                 self.navigation_policy = yaml.safe_load(f)
             print("✓ navigation_policy.yaml loaded")
 
