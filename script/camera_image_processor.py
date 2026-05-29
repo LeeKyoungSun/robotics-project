@@ -13,11 +13,9 @@ import cv2
 
 try:
     from script.vision_schema import filter_detections
-    from script.vision_to_executor import build_sequence_from_detections
     from script.yolo_detector import YoloDetectionConfig, YoloDetector
 except ImportError:
     from vision_schema import filter_detections
-    from vision_to_executor import build_sequence_from_detections
     from yolo_detector import YoloDetectionConfig, YoloDetector
 
 
@@ -40,7 +38,6 @@ class CameraImageProcessor(Node):
         self.declare_parameter("debug_frame_interval", 30)
         self.declare_parameter("raw_detection_topic", "/vision/raw_detections")
         self.declare_parameter("detection_topic", "/vision/detections")
-        self.declare_parameter("sequence_topic", "/vision/action_sequence")
         self.declare_parameter("yolo_debug_topic", "/vision/yolo_debug")
 
         self.bridge = CvBridge()
@@ -86,11 +83,6 @@ class CameraImageProcessor(Node):
         self.detection_publisher = self.create_publisher(
             String,
             str(self.get_parameter("detection_topic").value),
-            10,
-        )
-        self.sequence_publisher = self.create_publisher(
-            String,
-            str(self.get_parameter("sequence_topic").value),
             10,
         )
         self.yolo_debug_publisher = self.create_publisher(
@@ -182,7 +174,6 @@ class CameraImageProcessor(Node):
 
         raw_detections = []
         filtered_detections = []
-        sequence = []
 
         try:
             raw_detections = self.run_detection(processed_frame)
@@ -191,12 +182,10 @@ class CameraImageProcessor(Node):
                 self.last_detection_frame_count = self.frame_count
 
             filtered_detections = filter_detections(raw_detections)
-            sequence = build_sequence_from_detections(filtered_detections)
             yolo_debug = self.build_yolo_debug(processed_frame, raw_detections)
             self.publish_detection_messages(
                 raw_detections,
                 filtered_detections,
-                sequence,
                 yolo_debug,
             )
             self.save_debug_frame_if_needed(processed_frame, raw_detections)
@@ -204,7 +193,6 @@ class CameraImageProcessor(Node):
                 processed_frame,
                 raw_detections,
                 filtered_detections,
-                sequence,
             )
         finally:
             self.inference_busy = False
@@ -237,7 +225,6 @@ class CameraImageProcessor(Node):
         processed_frame,
         raw_detections,
         filtered_detections,
-        sequence,
     ):
         now = time.monotonic()
         if now - self.last_log_time < self.log_interval_sec:
@@ -248,8 +235,7 @@ class CameraImageProcessor(Node):
             "[CAMERA] frame received: "
             f"shape={processed_frame.shape}, "
             f"raw_detections={len(raw_detections)}, "
-            f"filtered_detections={len(filtered_detections)}, "
-            f"sequence_steps={len(sequence)}"
+            f"filtered_detections={len(filtered_detections)}"
         )
 
     def preprocess_frame(self, frame):
@@ -287,7 +273,6 @@ class CameraImageProcessor(Node):
         self,
         raw_detections,
         filtered_detections,
-        sequence,
         yolo_debug,
     ):
         self.raw_detection_publisher.publish(
@@ -295,9 +280,6 @@ class CameraImageProcessor(Node):
         )
         self.detection_publisher.publish(
             String(data=json.dumps(filtered_detections, ensure_ascii=False))
-        )
-        self.sequence_publisher.publish(
-            String(data=json.dumps(sequence, ensure_ascii=False))
         )
         self.yolo_debug_publisher.publish(
             String(data=json.dumps(yolo_debug, ensure_ascii=False))

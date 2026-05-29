@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 try:
     from script.vision_schema import filter_detections
-    from script.vision_to_executor import build_sequence_from_detections
+    from script.sanity_checks.vision_to_executor import build_sequence_from_detections
     from script.yolo_detector import YoloDetectionConfig, YoloDetector
 except ImportError:
     from vision_schema import filter_detections
-    from vision_to_executor import build_sequence_from_detections
+    from sanity_checks.vision_to_executor import build_sequence_from_detections
     from yolo_detector import YoloDetectionConfig, YoloDetector
 
 

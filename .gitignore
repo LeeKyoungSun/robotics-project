@@ -8,3 +8,5 @@ __pycache__/
 
 .env
 **/.env
+
+docs/current_version_test_guide.md

@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 os.environ["ROS_DOMAIN_ID"] = "0"
 os.environ["RMW_IMPLEMENTATION"] = "rmw_fastrtps_cpp"
 os.environ["ROS_LOCALHOST_ONLY"] = "0"
 os.environ["ROS_DISABLE_LOANED_MESSAGES"] = "1"
-os.environ["FASTRTPS_DEFAULT_PROFILES_FILE"] = (
-    os.path.expanduser("~/ros2_clean_ws/fastdds_no_shm.xml")
-)
+default_fastdds_profile = Path(__file__).resolve().parents[1] / "fastdds_no_shm.xml"
+if default_fastdds_profile.exists():
+    os.environ.setdefault(
+        "FASTRTPS_DEFAULT_PROFILES_FILE",
+        str(default_fastdds_profile),
+    )
 
 import rclpy
 
@@ -18,7 +22,6 @@ import json
 import subprocess
 import tempfile
 import time
-from pathlib import Path
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -26,6 +29,9 @@ try:
     from script.action_schema import ActionStatus
 except ImportError:
     from action_schema import ActionStatus
+
+
+DEFAULT_WORKSPACE_PATH = str(Path(__file__).resolve().parents[1])
 
 
 class VisionSequenceExecutorNode(Node):
@@ -39,7 +45,7 @@ class VisionSequenceExecutorNode(Node):
         self.declare_parameter("cooldown_sec", 5.0)
         self.declare_parameter("ignore_empty_sequences", True)
         self.declare_parameter("poll_period_sec", 0.2)
-        self.declare_parameter("workspace_path", "/home/lks/ros2_clean_ws")
+        self.declare_parameter("workspace_path", DEFAULT_WORKSPACE_PATH)
 
         self.execute_once = self.get_bool_parameter("execute_once")
         self.deduplicate_sequences = self.get_bool_parameter("deduplicate_sequences")

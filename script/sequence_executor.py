@@ -8,11 +8,14 @@ from dataclasses import dataclass
 try:
     from script import actions
     from script.action_schema import ActionStatus, validate_step
-    from script.test_scenarios import SCENARIOS
+    from script.sanity_checks.test_scenarios import SCENARIOS
 except ImportError:
     import actions
     from action_schema import ActionStatus, validate_step
-    from test_scenarios import SCENARIOS
+    try:
+        from sanity_checks.test_scenarios import SCENARIOS
+    except ImportError:
+        SCENARIOS = {}
 
 
 RETRYABLE_STATUSES = {
