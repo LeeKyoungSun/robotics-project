@@ -562,7 +562,12 @@ def build_prompt(user_text: str, detected_labels: list[str]) -> str:
     return f"""
 You are a robot action planner for a pet-care robot.
 
-Convert the Korean user request into an executable action sequence.
+Plan the full executable action sequence for the Korean user request.
+
+You must decide the intermediate steps yourself. Do not only classify the
+request into a fixed scenario. Choose the target objects, action order, waits,
+observations, and final report based on the user request, detected objects, and
+safety rules.
 
 Allowed objects:
 {ALLOWED_OBJECTS}
@@ -576,30 +581,39 @@ Detected objects after normalization:
 User request:
 {user_text}
 
-Use these scenario patterns exactly when they match:
+Planning policy:
+- Prefer the user's explicit request over automatic scenario assumptions.
+- Use detected objects as current context, but you may include a known static
+  object if the user explicitly asks for it.
+- Keep the sequence as short as possible while still completing the request.
+- Add intermediate steps only when they are useful for the task.
+- Use approach for reachable navigation targets.
+- Use observe to inspect or confirm pet/object state.
+- Use wait when the task implies feeding time, delay, or a short pause.
+- Use report when the user asks to be told the result, or when reporting is the
+  natural final step of the task.
+- If the user requests multiple targets, preserve the requested order.
+- If the user asks for an unsafe or impossible action, produce the safest
+  executable alternative and report why.
 
-1. Feeding scenario
-- Keywords: feeding, meal, food, rice, 밥, 밥그릇, 급식, 먹이, 배고픔
-- Output: approach bowl, wait 2 seconds, observe dog, report "feeding scenario completed"
+Safety and object rules:
+- Never approach potted_plant. It is observe-only.
+- If the user asks to approach potted_plant, replace it with observe
+  potted_plant and report "{REPORT_MESSAGES["potted_plant_safety"]}".
+- object may be null only for wait and report.
+- Do not invent objects outside the allowed object list.
 
-2. Play scenario
-- Keywords: play, toy, ball, 공, 장난감, 심심함, 놀아주기
-- Output: approach ball, observe dog, report "play scenario completed"
+Examples of valid plans:
+- "강아지 밥 챙겨줘" with dog visible:
+  approach bowl -> wait -> observe dog -> report
+- "침대 보고 의자도 확인해줘":
+  approach bed -> approach chair -> report
+- "화분으로 가까이 가줘":
+  observe potted_plant -> report
+- "강아지 상태 알려줘":
+  observe dog -> report
 
-3. Potted plant safety scenario
-- potted_plant is observe-only.
-- Never approach potted_plant.
-- If the request asks to approach or check potted_plant, output observe potted_plant and report "{REPORT_MESSAGES["potted_plant_safety"]}"
-
-4. Static multi-target scenario
-- If the request asks to check bowl, bed, and chair in sequence:
-  approach bowl, approach bed, approach chair
-
-5. Monitoring scenario
-- If the request is only about checking the pet condition:
-  observe dog or cat, then report "pet monitoring completed"
-
-Rules:
+Output rules:
 1. Return JSON only.
 2. Use only allowed objects and actions.
 3. object may be null only for wait and report.
@@ -608,7 +622,8 @@ Rules:
 6. observe params: duration_sec=5.0.
 7. wait params: duration_sec=2.0 unless requested otherwise.
 8. report params: message.
-9. If no valid target or scenario matches, return wait 2 seconds and report "no valid target detected".
+9. If no executable plan can be made, return wait 2 seconds and report
+   "no valid target detected".
 10. For params, include all five schema keys. Use null for unused params.
 """
 
