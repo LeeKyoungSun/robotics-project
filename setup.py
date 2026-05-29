@@ -61,15 +61,15 @@ setup(
         'console_scripts': [
             # 실행 명령어
             'nav2_goal_sender = script.nav2_goal_sender:main',
-            'multi_target_runner = script.multi_target_runner:main',
-            'test_pipeline = script.test_pipeline:main',
             'sequence_executor = script.sequence_executor:main',
-            'vision_to_executor = script.vision_to_executor:main',
             'camera_image_processor = script.camera_image_processor:main',
             'vision_sequence_executor = script.vision_sequence_executor:main',
-            'run_yolo_inference = script.run_yolo_inference:main',
-            'initial_scan_rotator = script.initial_scan_rotator:main',
             'llm_sequence_node = script.llm.llm_sequence_node:main',
+            'initial_scan_rotator = script.sanity_checks.initial_scan_rotator:main',
+            'multi_target_runner = script.sanity_checks.multi_target_runner:main',
+            'run_yolo_inference = script.sanity_checks.run_yolo_inference:main',
+            'test_pipeline = script.sanity_checks.test_pipeline:main',
+            'vision_to_executor = script.sanity_checks.vision_to_executor:main',
         ],
     },
 )

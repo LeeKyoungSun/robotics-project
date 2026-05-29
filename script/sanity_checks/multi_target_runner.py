@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 import time
 from pathlib import Path
 
 import yaml
 import rclpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 try:
     from script.nav2_goal_sender import Nav2GoalSender
@@ -27,7 +30,7 @@ def load_navigation_policy():
     }
 
     current_file = Path(__file__).resolve()
-    package_root = current_file.parent.parent
+    package_root = current_file.parents[2]
     config_path = package_root / "config" / "navigation_policy.yaml"
 
     if not config_path.exists():
