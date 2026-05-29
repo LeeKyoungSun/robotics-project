@@ -19,6 +19,135 @@ except ImportError:
     )
 
 
+OBJECT_DISPLAY_NAMES = {
+    "dog": "강아지",
+    "cat": "고양이",
+    "person": "사람",
+    "ball": "공",
+    "bowl": "밥그릇",
+    "bed": "침대",
+    "chair": "의자",
+    "potted_plant": "화분",
+}
+
+
+def display_object_name(object_name):
+    if not object_name:
+        return "대상"
+
+    return OBJECT_DISPLAY_NAMES.get(object_name, str(object_name))
+
+
+def format_duration(duration):
+    if duration is None:
+        return "잠시"
+
+    try:
+        seconds = float(duration)
+    except (TypeError, ValueError):
+        return "잠시"
+
+    if seconds.is_integer():
+        return f"{int(seconds)}초"
+
+    return f"{seconds:.1f}초"
+
+
+def describe_sequence_step(step):
+    if not isinstance(step, dict):
+        return ""
+
+    action = step.get("action")
+    object_name = step.get("object")
+    params = step.get("params")
+    params = params if isinstance(params, dict) else {}
+    target = display_object_name(object_name)
+
+    if action == "approach":
+        return f"{target} 방향으로 이동"
+
+    if action == "observe":
+        return f"{target} 관찰"
+
+    if action == "wait":
+        return f"{format_duration(params.get('duration_sec'))} 대기"
+
+    if action == "report":
+        return "결과 보고"
+
+    return str(action or "작업")
+
+
+def build_agent_response(sequence):
+    steps = [
+        step
+        for step in sequence or []
+        if isinstance(step, dict)
+    ]
+    flow_steps = [
+        describe_sequence_step(step)
+        for step in steps
+    ]
+    flow_steps = [
+        description
+        for description in flow_steps
+        if description
+    ]
+
+    approach_step = next(
+        (step for step in steps if step.get("action") == "approach"),
+        None,
+    )
+    observe_step = next(
+        (step for step in steps if step.get("action") == "observe"),
+        None,
+    )
+    has_report = any(step.get("action") == "report" for step in steps)
+
+    if approach_step and observe_step and has_report:
+        comment = (
+            "네, "
+            f"{display_object_name(approach_step.get('object'))} 방향으로 이동한 뒤 "
+            f"{display_object_name(observe_step.get('object'))} 관찰을 진행하고 "
+            "결과를 보고하겠습니다."
+        )
+    elif approach_step and has_report:
+        comment = (
+            "네, "
+            f"{display_object_name(approach_step.get('object'))} 방향으로 이동한 뒤 "
+            "결과를 보고하겠습니다."
+        )
+    elif observe_step and has_report:
+        comment = (
+            "네, "
+            f"{display_object_name(observe_step.get('object'))} 관찰 후 "
+            "결과를 보고하겠습니다."
+        )
+    elif approach_step:
+        comment = (
+            "네, "
+            f"{display_object_name(approach_step.get('object'))} 방향으로 이동하겠습니다."
+        )
+    elif observe_step:
+        comment = (
+            "네, "
+            f"{display_object_name(observe_step.get('object'))} 관찰을 진행하겠습니다."
+        )
+    elif flow_steps:
+        comment = "네, 요청을 바탕으로 실행 흐름을 진행하겠습니다."
+    else:
+        comment = "네, 실행 가능한 계획을 찾지 못해 잠시 대기하겠습니다."
+
+    flow = " -> ".join(
+        f"{index}. {description}"
+        for index, description in enumerate(flow_steps, start=1)
+    )
+    if not flow:
+        flow = "실행 계획 없음"
+
+    return comment, flow
+
+
 def build_dynamic_user_text(labels):
     label_set = set(labels)
 
@@ -233,6 +362,11 @@ class LLMSequenceNode(Node):
 
         try:
             result = call_llm_api(user_text, detected_labels)
+            sequence = result.get("sequence", []) if isinstance(result, dict) else []
+            agent_comment, agent_flow = build_agent_response(sequence)
+
+            print(f"agent: {agent_comment}", flush=True)
+            print(f"agent: 실행 흐름: {agent_flow}", flush=True)
 
             msg = String()
             msg.data = json.dumps(result, ensure_ascii=False)
