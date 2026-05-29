@@ -9,6 +9,7 @@ from enum import Enum
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.parameter import Parameter
 
 from nav2_msgs.action import NavigateToPose
 from geometry_msgs.msg import PoseStamped
@@ -57,6 +58,12 @@ class Nav2GoalSender(Node):
 
     def __init__(self):
         super().__init__("nav2_goal_sender")
+        if self.has_parameter("use_sim_time"):
+            self.set_parameters(
+                [Parameter("use_sim_time", Parameter.Type.BOOL, True)]
+            )
+        else:
+            self.declare_parameter("use_sim_time", True)
 
         self._action_client = ActionClient(
             self,
@@ -289,47 +296,8 @@ class Nav2GoalSender(Node):
 
         result_future = goal_handle.get_result_async()
 
-        # Arrival judgement is based on both action status and feedback distance
-        arrival_start_time = None
-        arrival_hold_sec = 0.5
-
         while not result_future.done():
             rclpy.spin_once(self, timeout_sec=0.1)
-
-            # Feedback-based arrival judgement
-            if (
-                self._latest_distance_remaining is not None
-                and self._latest_distance_remaining <= goal_tolerance_m
-            ):
-                if arrival_start_time is None:
-                    arrival_start_time = time.monotonic()
-
-                if time.monotonic() - arrival_start_time >= arrival_hold_sec:
-                    self.get_logger().info(
-                        f"[SUCCESS] {object_name} -> {target_name}: "
-                        f"Arrived by feedback distance "
-                        f"({self._latest_distance_remaining:.2f} m <= "
-                        f"{goal_tolerance_m:.2f} m)."
-                    )
-
-                    cancel_future = goal_handle.cancel_goal_async()
-
-                    while not cancel_future.done():
-                        rclpy.spin_once(self, timeout_sec=0.1)
-
-                    return NavigationResult(
-                        state=NavigationState.SUCCESS,
-                        object_name=object_name,
-                        target_name=target_name,
-                        min_distance_remaining=self._min_distance_remaining,
-                        message=(
-                            f"Arrived by feedback distance "
-                            f"({self._latest_distance_remaining:.2f} m <= "
-                            f"{goal_tolerance_m:.2f} m)."
-                        )
-                    )
-            else:
-                arrival_start_time = None
 
             if time.monotonic() - start_time > timeout_sec:
                 self.get_logger().warn(
