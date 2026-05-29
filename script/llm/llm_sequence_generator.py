@@ -1,11 +1,33 @@
-import os
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
 import json
-from dotenv import load_dotenv
-from openai import OpenAI
+import os
+from typing import Any
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+try:
+    from script.action_schema import ActionStatus, validate_step
+except ImportError:
+    try:
+        from action_schema import ActionStatus, validate_step
+    except ImportError:
+        ActionStatus = None
+        validate_step = None
+
+if load_dotenv is not None:
+    load_dotenv()
+
 
 ALLOWED_OBJECTS = [
     "dog",
@@ -24,19 +46,100 @@ ALLOWED_ACTIONS = [
     "report",
 ]
 
+APPROACH_PARAMS = {
+    "timeout_sec": 60.0,
+    "goal_tolerance_m": 0.25,
+    "retry_count": 2,
+}
+
+OBSERVE_PARAMS = {
+    "duration_sec": 5.0,
+}
+
+WAIT_PARAMS = {
+    "duration_sec": 2.0,
+}
+
+REPORT_MESSAGES = {
+    "feeding": "feeding scenario completed",
+    "play": "play scenario completed",
+    "pet_monitoring": "pet monitoring completed",
+    "potted_plant_safety": (
+        "potted plant is observe-only target. approach blocked for safety"
+    ),
+    "bed_check": "bed check completed",
+    "chair_check": "chair check completed",
+    "bowl_check": "bowl check completed",
+    "ball_check": "ball check completed",
+    "no_valid_target": "no valid target detected",
+}
+
 LABEL_ALIAS = {
-    "potted plant": "potted_plant",
-    "plant": "potted_plant",
-    "airplane": "potted_plant",
-    "sports ball": "ball",
+    "dog": "dog",
+    "puppy": "dog",
+    "강아지": "dog",
+    "개": "dog",
+    "cat": "cat",
+    "고양이": "cat",
+    "bowl": "bowl",
     "cup": "bowl",
     "dish": "bowl",
     "plate": "bowl",
-    "kite": "bed",
+    "그릇": "bowl",
+    "밥그릇": "bowl",
+    "ball": "ball",
+    "sports ball": "ball",
+    "sports_ball": "ball",
+    "공": "ball",
+    "bed": "bed",
     "couch": "bed",
     "sofa": "bed",
-    "horse": "dog",
-    "cow": "dog",
+    "침대": "bed",
+    "chair": "chair",
+    "의자": "chair",
+    "potted plant": "potted_plant",
+    "potted_plant": "potted_plant",
+    "plant": "potted_plant",
+    "airplane": "potted_plant",
+    "화분": "potted_plant",
+}
+
+ACTION_ALIAS = {
+    "approach": "approach",
+    "move": "approach",
+    "go": "approach",
+    "navigate": "approach",
+    "접근": "approach",
+    "이동": "approach",
+    "가까이": "approach",
+    "observe": "observe",
+    "watch": "observe",
+    "check": "observe",
+    "inspect": "observe",
+    "관찰": "observe",
+    "확인": "observe",
+    "살펴": "observe",
+    "wait": "wait",
+    "기다": "wait",
+    "대기": "wait",
+    "report": "report",
+    "보고": "report",
+    "알려": "report",
+}
+
+APPROACH_OBJECTS = {
+    "dog",
+    "cat",
+    "bowl",
+    "ball",
+    "bed",
+    "chair",
+}
+
+OBSERVE_OBJECTS = {
+    "dog",
+    "cat",
+    "potted_plant",
 }
 
 ACTION_SEQUENCE_SCHEMA = {
@@ -47,22 +150,18 @@ ACTION_SEQUENCE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "step_id": {
-                        "type": "integer"
-                    },
+                    "step_id": {"type": "integer"},
                     "action": {
                         "type": "string",
-                        "enum": ALLOWED_ACTIONS
+                        "enum": ALLOWED_ACTIONS,
                     },
                     "object": {
                         "anyOf": [
                             {
                                 "type": "string",
-                                "enum": ALLOWED_OBJECTS
+                                "enum": ALLOWED_OBJECTS,
                             },
-                            {
-                                "type": "null"
-                            }
+                            {"type": "null"},
                         ]
                     },
                     "params": {
@@ -71,87 +170,399 @@ ACTION_SEQUENCE_SCHEMA = {
                             "timeout_sec": {
                                 "anyOf": [
                                     {"type": "number"},
-                                    {"type": "null"}
+                                    {"type": "null"},
                                 ]
                             },
                             "goal_tolerance_m": {
                                 "anyOf": [
                                     {"type": "number"},
-                                    {"type": "null"}
+                                    {"type": "null"},
                                 ]
                             },
                             "retry_count": {
                                 "anyOf": [
                                     {"type": "integer"},
-                                    {"type": "null"}
+                                    {"type": "null"},
                                 ]
                             },
                             "duration_sec": {
                                 "anyOf": [
                                     {"type": "number"},
-                                    {"type": "null"}
+                                    {"type": "null"},
                                 ]
                             },
                             "message": {
                                 "anyOf": [
                                     {"type": "string"},
-                                    {"type": "null"}
+                                    {"type": "null"},
                                 ]
-                            }
+                            },
                         },
                         "required": [
                             "timeout_sec",
                             "goal_tolerance_m",
                             "retry_count",
                             "duration_sec",
-                            "message"
+                            "message",
                         ],
-                        "additionalProperties": False
-                    }
+                        "additionalProperties": False,
+                    },
                 },
                 "required": [
                     "step_id",
                     "action",
                     "object",
-                    "params"
+                    "params",
                 ],
-                "additionalProperties": False
-            }
+                "additionalProperties": False,
+            },
         }
     },
     "required": ["sequence"],
-    "additionalProperties": False
+    "additionalProperties": False,
 }
 
-def normalize_label(label: str):
-    label = label.lower().strip().replace(" ", "_")
 
-    reverse_alias_key = label.replace("_", " ")
+def normalize_label(label: str | None) -> str | None:
+    if label is None:
+        return None
 
-    if label in ALLOWED_OBJECTS:
-        return label
+    normalized = str(label).lower().strip().replace("-", " ")
+    normalized = normalized.replace("_", " ")
 
-    if reverse_alias_key in LABEL_ALIAS:
-        return LABEL_ALIAS[reverse_alias_key]
+    if normalized.replace(" ", "_") in ALLOWED_OBJECTS:
+        return normalized.replace(" ", "_")
 
-    if label in LABEL_ALIAS:
-        return LABEL_ALIAS[label]
+    return LABEL_ALIAS.get(normalized)
+
+
+def normalize_labels(labels: list[str] | tuple[str, ...] | None) -> list[str]:
+    normalized = []
+
+    for label in labels or []:
+        object_name = normalize_label(label)
+        if object_name and object_name not in normalized:
+            normalized.append(object_name)
+
+    return normalized
+
+
+def normalize_action(action: str | None) -> str | None:
+    if action is None:
+        return None
+
+    normalized = str(action).lower().strip()
+
+    if normalized in ALLOWED_ACTIONS:
+        return normalized
+
+    for keyword, mapped_action in ACTION_ALIAS.items():
+        if keyword in normalized:
+            return mapped_action
 
     return None
 
 
-def build_prompt(user_text: str, detected_labels: list[str]) -> str:
-    normalized = []
+def make_step(
+    step_id: int,
+    action: str,
+    object_name: str | None = None,
+    params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "step_id": step_id,
+        "action": action,
+        "object": object_name,
+        "params": dict(params or {}),
+    }
 
-    for label in detected_labels:
-        obj = normalize_label(label)
-        if obj and obj not in normalized:
-            normalized.append(obj)
+
+def approach_step(step_id: int, object_name: str) -> dict[str, Any]:
+    return make_step(step_id, "approach", object_name, APPROACH_PARAMS)
+
+
+def observe_step(step_id: int, object_name: str) -> dict[str, Any]:
+    return make_step(step_id, "observe", object_name, OBSERVE_PARAMS)
+
+
+def wait_step(step_id: int) -> dict[str, Any]:
+    return make_step(step_id, "wait", None, WAIT_PARAMS)
+
+
+def report_step(step_id: int, message: str) -> dict[str, Any]:
+    return make_step(step_id, "report", None, {"message": message})
+
+
+def feeding_sequence() -> list[dict[str, Any]]:
+    return [
+        approach_step(1, "bowl"),
+        wait_step(2),
+        observe_step(3, "dog"),
+        report_step(4, REPORT_MESSAGES["feeding"]),
+    ]
+
+
+def play_sequence() -> list[dict[str, Any]]:
+    return [
+        approach_step(1, "ball"),
+        observe_step(2, "dog"),
+        report_step(3, REPORT_MESSAGES["play"]),
+    ]
+
+
+def potted_plant_safety_sequence() -> list[dict[str, Any]]:
+    return [
+        observe_step(1, "potted_plant"),
+        report_step(2, REPORT_MESSAGES["potted_plant_safety"]),
+    ]
+
+
+def static_multi_target_sequence() -> list[dict[str, Any]]:
+    return [
+        approach_step(1, "bowl"),
+        approach_step(2, "bed"),
+        approach_step(3, "chair"),
+    ]
+
+
+def pet_monitoring_sequence(object_name: str) -> list[dict[str, Any]]:
+    return [
+        observe_step(1, object_name),
+        report_step(2, REPORT_MESSAGES["pet_monitoring"]),
+    ]
+
+
+def object_check_sequence(object_name: str) -> list[dict[str, Any]]:
+    message_key = f"{object_name}_check"
+    return [
+        approach_step(1, object_name),
+        report_step(2, REPORT_MESSAGES.get(message_key, f"{object_name} check completed")),
+    ]
+
+
+def no_valid_target_sequence() -> list[dict[str, Any]]:
+    return [
+        wait_step(1),
+        report_step(2, REPORT_MESSAGES["no_valid_target"]),
+    ]
+
+
+def has_any(text: str, keywords: list[str]) -> bool:
+    return any(keyword in text for keyword in keywords)
+
+
+def smart_plan_sequence(
+    user_text: str,
+    detected_labels: list[str] | None,
+) -> list[dict[str, Any]]:
+    """
+    Deterministic planner used as a local fallback and as a guardrail around
+    LLM output. It maps requests to the predefined executor action vocabulary.
+    """
+
+    text = (user_text or "").lower()
+    labels = set(normalize_labels(detected_labels))
+
+    potted_requested = "potted_plant" in labels or has_any(
+        text,
+        ["화분", "plant", "potted"],
+    )
+    if potted_requested:
+        return potted_plant_safety_sequence()
+
+    if has_any(text, ["밥", "급식", "먹이", "food", "meal", "feed", "rice", "배고픔"]):
+        return feeding_sequence()
+
+    if has_any(text, ["놀이", "놀아", "장난감", "공", "toy", "ball", "play", "심심"]):
+        return play_sequence()
+
+    multi_text = all(keyword in text for keyword in ["그릇", "침대", "의자"])
+    multi_labels = {"bowl", "bed", "chair"}.issubset(labels)
+    if multi_text or multi_labels:
+        return static_multi_target_sequence()
+
+    static_target_keywords = [
+        ("bed", ["침대", "bed"]),
+        ("chair", ["의자", "chair"]),
+        ("bowl", ["그릇", "밥그릇", "bowl"]),
+        ("ball", ["공", "ball"]),
+    ]
+
+    for object_name, keywords in static_target_keywords:
+        if has_any(text, keywords):
+            return object_check_sequence(object_name)
+
+    monitoring_requested = has_any(
+        text,
+        ["상태", "condition", "monitor", "관찰", "확인", "살펴", "체크"],
+    )
+
+    if "dog" in labels and monitoring_requested:
+        return pet_monitoring_sequence("dog")
+
+    if "cat" in labels and monitoring_requested:
+        return pet_monitoring_sequence("cat")
+
+    if has_any(text, ["강아지", "dog"]) and not labels.intersection(
+        {"bed", "chair", "bowl", "ball"}
+    ):
+        return pet_monitoring_sequence("dog")
+
+    if has_any(text, ["고양이", "cat"]) and not labels.intersection(
+        {"bed", "chair", "bowl", "ball"}
+    ):
+        return pet_monitoring_sequence("cat")
+
+    for object_name, _ in static_target_keywords:
+        if object_name in labels:
+            return object_check_sequence(object_name)
+
+    if "dog" in labels:
+        return pet_monitoring_sequence("dog")
+
+    if "cat" in labels:
+        return pet_monitoring_sequence("cat")
+
+    return no_valid_target_sequence()
+
+
+def param_value(params: dict[str, Any], key: str, default: Any) -> Any:
+    value = params.get(key)
+    return default if value is None else value
+
+
+def compact_params(action: str, params: dict[str, Any] | None) -> dict[str, Any]:
+    params = params or {}
+
+    if action == "approach":
+        return {
+            "timeout_sec": float(
+                param_value(params, "timeout_sec", APPROACH_PARAMS["timeout_sec"])
+            ),
+            "goal_tolerance_m": float(
+                param_value(
+                    params,
+                    "goal_tolerance_m",
+                    APPROACH_PARAMS["goal_tolerance_m"],
+                )
+            ),
+            "retry_count": int(
+                param_value(params, "retry_count", APPROACH_PARAMS["retry_count"])
+            ),
+        }
+
+    if action == "observe":
+        return {
+            "duration_sec": float(
+                param_value(params, "duration_sec", OBSERVE_PARAMS["duration_sec"])
+            ),
+        }
+
+    if action == "wait":
+        return {
+            "duration_sec": float(
+                param_value(params, "duration_sec", WAIT_PARAMS["duration_sec"])
+            ),
+        }
+
+    if action == "report":
+        message = params.get("message") or "sequence completed"
+        return {
+            "message": str(message),
+        }
+
+    return {}
+
+
+def is_valid_step(step: dict[str, Any]) -> bool:
+    if validate_step is None or ActionStatus is None:
+        action = step.get("action")
+        object_name = step.get("object")
+
+        if action not in ALLOWED_ACTIONS:
+            return False
+
+        if action in {"wait", "report"}:
+            return object_name is None
+
+        if action == "approach":
+            return object_name in APPROACH_OBJECTS
+
+        if action == "observe":
+            return object_name in OBSERVE_OBJECTS
+
+        return False
+
+    return validate_step(step) == ActionStatus.SUCCESS
+
+
+def coerce_action_sequence(
+    llm_output: dict[str, Any] | list[dict[str, Any]] | None,
+    user_text: str = "",
+    detected_labels: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    if llm_output is None:
+        return smart_plan_sequence(user_text, detected_labels)
+
+    raw_sequence = llm_output.get("sequence", []) if isinstance(llm_output, dict) else llm_output
+
+    if not isinstance(raw_sequence, list):
+        return smart_plan_sequence(user_text, detected_labels)
+
+    coerced: list[dict[str, Any]] = []
+
+    for raw_step in raw_sequence:
+        if not isinstance(raw_step, dict):
+            continue
+
+        action = normalize_action(raw_step.get("action"))
+        object_name = normalize_label(raw_step.get("object"))
+        params = raw_step.get("params")
+        params = params if isinstance(params, dict) else {}
+
+        if object_name == "potted_plant" and action == "approach":
+            return potted_plant_safety_sequence()
+
+        if action in {"wait", "report"}:
+            object_name = None
+
+        if action is None:
+            if object_name == "potted_plant":
+                action = "observe"
+            elif object_name in APPROACH_OBJECTS:
+                action = "approach"
+            else:
+                continue
+
+        step = make_step(
+            len(coerced) + 1,
+            action,
+            object_name,
+            compact_params(action, params),
+        )
+
+        if is_valid_step(step):
+            coerced.append(step)
+
+    if not coerced:
+        return smart_plan_sequence(user_text, detected_labels)
+
+    return [
+        {
+            **step,
+            "step_id": index,
+        }
+        for index, step in enumerate(coerced, start=1)
+    ]
+
+
+def build_prompt(user_text: str, detected_labels: list[str]) -> str:
+    normalized = normalize_labels(detected_labels)
 
     return f"""
 You are a robot action planner for a pet-care robot.
 
-Your task is to convert a Korean user request into an executable action sequence.
+Convert the Korean user request into an executable action sequence.
 
 Allowed objects:
 {ALLOWED_OBJECTS}
@@ -165,81 +576,99 @@ Detected objects after normalization:
 User request:
 {user_text}
 
-Use the following scenario patterns.
+Use these scenario patterns exactly when they match:
 
-1. Feeding scenario:
-- If the request is about feeding, meal, food, rice, 밥, 밥그릇, 급식, 배고픔:
-  step 1: approach bowl with timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2
-  step 2: wait with object null and duration_sec=2.0
-  step 3: observe dog with duration_sec=5.0
-  step 4: report with object null and message "feeding scenario completed"
+1. Feeding scenario
+- Keywords: feeding, meal, food, rice, 밥, 밥그릇, 급식, 먹이, 배고픔
+- Output: approach bowl, wait 2 seconds, observe dog, report "feeding scenario completed"
 
-2. Play scenario:
-- If the request is about play, toy, ball, 심심함, 놀아주기:
-  step 1: approach ball with timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2
-  step 2: observe dog with duration_sec=5.0
-  step 3: report with object null and message "play scenario completed"
+2. Play scenario
+- Keywords: play, toy, ball, 공, 장난감, 심심함, 놀아주기
+- Output: approach ball, observe dog, report "play scenario completed"
 
-3. Potted plant safety scenario:
+3. Potted plant safety scenario
 - potted_plant is observe-only.
 - Never approach potted_plant.
-- If the request asks to approach potted_plant, replace it with:
-  step 1: observe potted_plant with duration_sec=5.0
-  step 2: report with object null and message "potted plant is observe-only target. approach blocked for safety"
+- If the request asks to approach or check potted_plant, output observe potted_plant and report "{REPORT_MESSAGES["potted_plant_safety"]}"
 
-4. Static multi-target scenario:
+4. Static multi-target scenario
 - If the request asks to check bowl, bed, and chair in sequence:
-  step 1: approach bowl with timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2
-  step 2: approach bed with timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2
-  step 3: approach chair with timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2
+  approach bowl, approach bed, approach chair
 
-5. Monitoring scenario:
+5. Monitoring scenario
 - If the request is only about checking the pet condition:
-  step 1: observe dog or cat with duration_sec=5.0
-  step 2: report with object null and message "pet monitoring completed"
+  observe dog or cat, then report "pet monitoring completed"
 
 Rules:
 1. Return JSON only.
-2. Use only allowed objects.
-3. Use only allowed actions.
-4. object may be null only for wait and report.
-5. step_id must start from 1 and increase by 1.
-6. approach params must include timeout_sec, goal_tolerance_m, retry_count.
-7. observe params must include duration_sec.
-8. wait params must include duration_sec.
-9. report params must include message.
-10. Never approach potted_plant.
-11. If the request is ambiguous, choose the most likely scenario based on the detected objects. If no scenario matches, return an empty sequence.
-12. Always try to include an observe step before report to confirm the action result, unless the scenario is clearly about waiting or reporting without observation.
-13. Keep the sequence as short as possible while fulfilling the user request and following the rules.
-14. For params, always include all five keys: timeout_sec, goal_tolerance_m, retry_count, duration_sec, message. For unused params, use null.
+2. Use only allowed objects and actions.
+3. object may be null only for wait and report.
+4. step_id must start from 1 and increase by 1.
+5. approach params: timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2.
+6. observe params: duration_sec=5.0.
+7. wait params: duration_sec=2.0 unless requested otherwise.
+8. report params: message.
+9. If no valid target or scenario matches, return wait 2 seconds and report "no valid target detected".
+10. For params, include all five schema keys. Use null for unused params.
 """
 
 
-def call_llm_api(user_text: str, detected_labels: list[str]):
+def parse_response_json(output_text: str) -> dict[str, Any]:
+    parsed = json.loads(output_text)
+    if not isinstance(parsed, dict):
+        raise ValueError("LLM output must be a JSON object")
+    return parsed
+
+
+def call_llm_api(
+    user_text: str,
+    detected_labels: list[str],
+    *,
+    use_fallback: bool = True,
+) -> dict[str, list[dict[str, Any]]]:
     prompt = build_prompt(user_text, detected_labels)
+    api_key = os.getenv("OPENAI_API_KEY")
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=prompt,
-        text={
-            "format": {
-                "type": "json_schema",
-                "name": "action_sequence",
-                "schema": ACTION_SEQUENCE_SCHEMA,
-                "strict": True
-            }
+    if OpenAI is None or not api_key:
+        if not use_fallback:
+            raise RuntimeError("OpenAI client or OPENAI_API_KEY is not available")
+        return {
+            "sequence": smart_plan_sequence(user_text, detected_labels),
         }
-    )
 
-    return json.loads(response.output_text)
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.responses.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+            input=prompt,
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "action_sequence",
+                    "schema": ACTION_SEQUENCE_SCHEMA,
+                    "strict": True,
+                }
+            },
+        )
+        raw_result = parse_response_json(response.output_text)
+        return {
+            "sequence": coerce_action_sequence(
+                raw_result,
+                user_text=user_text,
+                detected_labels=detected_labels,
+            )
+        }
+
+    except Exception:
+        if not use_fallback:
+            raise
+        return {
+            "sequence": smart_plan_sequence(user_text, detected_labels),
+        }
 
 
 if __name__ == "__main__":
-    user_text = "강아지 밥 챙겨줘"
-    detected_labels = ["dog"]
-
-    result = call_llm_api(user_text, detected_labels)
+    result = call_llm_api("강아지 밥 챙겨줘", ["dog"])
 
     print("===== ACTION SEQUENCE =====")
     print(json.dumps(result, indent=2, ensure_ascii=False))

@@ -7,10 +7,16 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
-from llm_sequence_generator import (
-    call_llm_api,
-    normalize_label,
-)
+try:
+    from .llm_sequence_generator import (
+        call_llm_api,
+        normalize_label,
+    )
+except ImportError:
+    from llm_sequence_generator import (
+        call_llm_api,
+        normalize_label,
+    )
 
 
 def build_dynamic_user_text(labels):
@@ -89,9 +95,26 @@ class LLMSequenceNode(Node):
         try:
             detections = json.loads(msg.data)
 
+            if isinstance(detections, dict):
+                detections = (
+                    detections.get("detections")
+                    or detections.get("filtered_detections")
+                    or detections.get("objects")
+                    or []
+                )
+
+            if not isinstance(detections, list):
+                self.get_logger().warn(
+                    "Detection payload must be a list or a dict containing detections."
+                )
+                return
+
             labels = []
 
             for det in detections:
+                if not isinstance(det, dict):
+                    continue
+
                 if "label" not in det:
                     continue
 

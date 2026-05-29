@@ -16,10 +16,7 @@ setup(
     name=package_name,
     version='0.0.1',
 
-    # script 폴더 사용
-    packages=[
-    'script',
-  ],
+    packages=find_packages(include=['script', 'script.*']),
 
     data_files=[
         # ROS2 패키지 인식용
@@ -49,6 +46,8 @@ setup(
         'setuptools',
         'PyYAML',
         'ultralytics',
+        'openai',
+        'python-dotenv',
     ],
 
     zip_safe=True,
@@ -70,6 +69,7 @@ setup(
             'vision_sequence_executor = script.vision_sequence_executor:main',
             'run_yolo_inference = script.run_yolo_inference:main',
             'initial_scan_rotator = script.initial_scan_rotator:main',
+            'llm_sequence_node = script.llm.llm_sequence_node:main',
         ],
     },
 )
