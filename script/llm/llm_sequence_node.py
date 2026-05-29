@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import json
+import sys
+import threading
+import time
 from collections import Counter
 
 import rclpy
@@ -207,6 +210,7 @@ class LLMSequenceNode(Node):
         self.declare_parameter("action_sequence_topic", "/vision/action_sequence")
         self.declare_parameter("timer_period_sec", 5.0)
         self.declare_parameter("require_user_request", False)
+        self.declare_parameter("interactive_input", True)
 
         self.detected_labels = []
         self.last_valid_labels = []
@@ -214,7 +218,9 @@ class LLMSequenceNode(Node):
         self.latest_user_request = ""
         self.user_request_id = 0
         self.consumed_user_request_id = 0
+        self.request_lock = threading.Lock()
         self.require_user_request = self.get_bool_parameter("require_user_request")
+        self.interactive_input_enabled = self.get_bool_parameter("interactive_input")
 
         self.label_history = []
 
@@ -249,6 +255,18 @@ class LLMSequenceNode(Node):
             f"user_request_topic={self.get_parameter('user_request_topic').value}"
         )
 
+        if self.interactive_input_enabled:
+            if sys.stdin is not None and sys.stdin.isatty():
+                self.input_thread = threading.Thread(
+                    target=self.interactive_input_loop,
+                    daemon=True,
+                )
+                self.input_thread.start()
+            else:
+                self.get_logger().warn(
+                    "Interactive input disabled because stdin is not a TTY."
+                )
+
     def get_bool_parameter(self, name):
         value = self.get_parameter(name).value
 
@@ -260,15 +278,53 @@ class LLMSequenceNode(Node):
 
         return bool(value)
 
+    def submit_user_request(self, user_request, source):
+        user_request = (user_request or "").strip()
+        if not user_request:
+            return None
+
+        with self.request_lock:
+            self.latest_user_request = user_request
+            self.user_request_id += 1
+            request_id = self.user_request_id
+
+        self.get_logger().info(
+            f"User request received from {source}: {user_request}"
+        )
+        return request_id
+
+    def wait_until_request_processed(self, request_id):
+        deadline = time.monotonic() + 120.0
+
+        while rclpy.ok() and time.monotonic() < deadline:
+            with self.request_lock:
+                if self.consumed_user_request_id >= request_id:
+                    return
+
+            time.sleep(0.2)
+
+    def interactive_input_loop(self):
+        while rclpy.ok():
+            try:
+                user_request = input("agent: 지금 어떤 상황이신가요?: ")
+            except EOFError:
+                self.get_logger().warn("Interactive input closed.")
+                return
+            except KeyboardInterrupt:
+                return
+
+            request_id = self.submit_user_request(user_request, "stdin")
+            if request_id is None:
+                print("agent: 내용을 입력해 주세요.", flush=True)
+                continue
+
+            self.wait_until_request_processed(request_id)
+
     def user_request_callback(self, msg):
         user_request = parse_user_request(msg.data)
-        if not user_request:
+        request_id = self.submit_user_request(user_request, "topic")
+        if request_id is None:
             self.get_logger().warn("Ignored empty user request.")
-            return
-
-        self.latest_user_request = user_request
-        self.user_request_id += 1
-        self.get_logger().info(f"User request received: {user_request}")
 
     def detection_callback(self, msg):
         try:
@@ -323,19 +379,20 @@ class LLMSequenceNode(Node):
             self.get_logger().error(f"Detection parse error: {e}")
 
     def select_user_text(self):
-        if self.user_request_id > self.consumed_user_request_id:
-            return self.latest_user_request, True
+        with self.request_lock:
+            if self.user_request_id > self.consumed_user_request_id:
+                return self.latest_user_request, True, self.user_request_id
 
         if self.require_user_request:
-            return "", False
+            return "", False, None
 
         if self.detected_labels:
-            return build_dynamic_user_text(self.detected_labels), False
+            return build_dynamic_user_text(self.detected_labels), False, None
 
-        return "", False
+        return "", False, None
 
     def generate_sequence(self):
-        user_text, from_user = self.select_user_text()
+        user_text, from_user, request_id = self.select_user_text()
 
         if not user_text:
             self.get_logger().info("No user request or valid labels yet. Skip LLM call.")
@@ -346,7 +403,7 @@ class LLMSequenceNode(Node):
         if from_user:
             sequence_key = (
                 "user",
-                self.user_request_id,
+                request_id,
                 tuple(sorted(detected_labels)),
             )
         else:
@@ -372,8 +429,12 @@ class LLMSequenceNode(Node):
             msg.data = json.dumps(result, ensure_ascii=False)
             self.sequence_pub.publish(msg)
 
-            if from_user:
-                self.consumed_user_request_id = self.user_request_id
+            if from_user and request_id is not None:
+                with self.request_lock:
+                    self.consumed_user_request_id = max(
+                        self.consumed_user_request_id,
+                        request_id,
+                    )
 
             self.get_logger().info(f"User text: {user_text}")
             self.get_logger().info(f"Published action sequence: {msg.data}")
