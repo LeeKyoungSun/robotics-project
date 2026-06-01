@@ -8,8 +8,8 @@ LLM + Vision 기반 자율 반려동물 케어 로봇 프로젝트입니다.
 
 예상 동작:
 
-1. dog 또는 bowl 탐지
-2. bowl 위치로 접근
+1. dog 또는 apple 탐지
+2. apple 위치로 접근
 3. dog 위치 확인
 4. dog 상태 관찰
 

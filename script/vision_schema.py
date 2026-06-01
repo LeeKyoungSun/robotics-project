@@ -17,11 +17,10 @@ LABEL_MAP = {
     "sports ball": "ball",
     "sports_ball": "ball",
     "ball": "ball",
-    "bowl": "bowl",
+    "apple": "apple",
     "bed": "bed",
     "chair": "chair",
-    "potted plant": "potted_plant",
-    "potted_plant": "potted_plant",
+    "vase": "vase",
     "stop sign": "ball",    # For sanity check(YOLO classifies "ball" as "stop sign", UNWANTED !!)
 }
 

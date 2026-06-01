@@ -15,11 +15,11 @@ class TargetResolver:
 
     STATIC_OBJECTS = {
         "ball": "ball_zone",
-        "bowl": "bowl_zone",
+        "apple": "apple_zone",
         "bed": "bed_zone",
         "chair": "chair_zone",
         "cat": "cat_zone",
-        "potted_plant": "potted_plant_zone",
+        "vase": "vase_zone",
     }
 
     DYNAMIC_OBJECTS = {
@@ -121,7 +121,8 @@ if __name__ == "__main__":
         "bed",
         "chair",
         "cat",
-        "potted_plant",
+        "vase",
+        "apple",
     ]
 
     for obj in test_objects:

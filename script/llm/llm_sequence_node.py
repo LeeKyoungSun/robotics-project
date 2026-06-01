@@ -27,10 +27,10 @@ OBJECT_DISPLAY_NAMES = {
     "cat": "고양이",
     "person": "사람",
     "ball": "공",
-    "bowl": "밥그릇",
+    "apple": "사과",
     "bed": "침대",
     "chair": "의자",
-    "potted_plant": "화분",
+    "vase": "꽃병",
 }
 
 
@@ -154,17 +154,17 @@ def build_agent_response(sequence):
 def build_dynamic_user_text(labels):
     label_set = set(labels)
 
-    if "potted_plant" in label_set:
-        return "화분은 접근하지 말고 관찰한 뒤 결과를 보고해줘"
+    if "vase" in label_set:
+        return "꽃병은 접근하지 말고 관찰한 뒤 결과를 보고해줘"
 
-    if "bowl" in label_set and "dog" in label_set:
+    if "apple" in label_set and "dog" in label_set:
         return "강아지 급식 시나리오를 수행해줘"
 
     if "ball" in label_set and "dog" in label_set:
         return "강아지 놀이 시나리오를 수행해줘"
 
-    if {"bowl", "bed", "chair"}.issubset(label_set):
-        return "그릇, 침대, 의자를 순서대로 확인해줘"
+    if {"apple", "bed", "chair"}.issubset(label_set):
+        return "사과, 침대, 의자를 순서대로 확인해줘"
 
     if "dog" in label_set:
         return "강아지 상태를 관찰하고 결과를 보고해줘"

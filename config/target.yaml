@@ -1,4 +1,4 @@
-# Static objects: ball, bed, bowl, potted_plant, chair, cat
+# Static objects: ball, bed, apple, potted_plant, chair, cat
 # Dynamic objects: person, dog
 
 # Static object positions should match the world model poses.
@@ -12,12 +12,12 @@ targets:
     yaw: 0.0
     description: "Ball location for play"
     
-  bowl_zone:
+  apple_zone:
     frame_id: "map"
     x: 0.0
     y: -2.20
     yaw: 0.0
-    description: "Food bowl position"
+    description: "Food position"
 
   bed_zone:
     frame_id: "map"
@@ -47,12 +47,12 @@ targets:
     yaw: 0.0
     description: "Safe observation point for dangerous object"
 
-  potted_plant_zone:
+  vase_zone:
     frame_id: "map"
     x: 0.10
     y: 2.30
     yaw: 0.0
-    description: "Potted plant observation-only zone"
+    description: "Vase rvation-only zone"
 
 # Dynamic targets (people, dogs) will be detected and tracked in real-time,
 # so their positions are not predefined in this configuration.

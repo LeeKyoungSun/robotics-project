@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <model name="bowl">
+  <model name="apple">
     <static>true</static>
     <link name="link">
       <pose>0 0 0 0 0 0</pose>
@@ -8,7 +8,7 @@
         <pose>0.4782 0.1133 0.0078 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>model://bowl/czeresnie/czeresnie.obj</uri>
+            <uri>model://apple/czeresnie/czeresnie.obj</uri>
             <scale>0.01 0.01 0.01</scale>
           </mesh>
         </geometry>

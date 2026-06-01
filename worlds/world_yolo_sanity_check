@@ -766,13 +766,13 @@
       <pose>-1.80 -1.50 0 0 0 2.3562</pose>
     </include>
     <include>
-      <uri>model://potted_plant_v1</uri>
-      <name>sanity_potted_plant_v1</name>
+      <uri>model://vase</uri>
+      <name>sanity_vase</name>
       <pose>0.10 2.30 0 0 0 0</pose>
     </include>
     <include>
-      <uri>model://bowl</uri>
-      <name>sanity_bowl</name>
+      <uri>model://apple</uri>
+      <name>sanity_apple</name>
       <pose>0 -2.20 0 0 0 0</pose>
     </include>
   </world>

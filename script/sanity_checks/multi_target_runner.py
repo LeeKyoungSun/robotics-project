@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument(
         "objects",
         nargs="+",
-        help="Object names to visit in order. Example: bowl bed chair"
+        help="Object names to visit in order. Example: apple bed chair"
     )
 
     parser.add_argument(
