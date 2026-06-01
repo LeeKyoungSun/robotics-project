@@ -345,7 +345,7 @@ def main(args=None):
 
     if len(sys.argv) < 2:
         print("Usage: ros2 run pet_robot_pkg nav2_goal_sender <object_name>")
-        print("Example: ros2 run pet_robot_pkg nav2_goal_sender bowl")
+        print("Example: ros2 run pet_robot_pkg nav2_goal_sender apple")
         rclpy.shutdown()
         return
 

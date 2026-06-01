@@ -40,7 +40,7 @@ def test_coerce_blocks_potted_plant_approach():
                 {
                     "step_id": 99,
                     "action": "approach",
-                    "object": "potted plant",
+                    "object": "vase",
                     "params": {
                         "timeout_sec": 10.0,
                         "goal_tolerance_m": 0.1,
@@ -49,8 +49,8 @@ def test_coerce_blocks_potted_plant_approach():
                 }
             ]
         },
-        user_text="화분으로 가까이 가줘",
-        detected_labels=["potted_plant"],
+        user_text="꽃병으로 가까이 가줘",
+        detected_labels=["vase"],
     )
 
     assert actual == load_cases()[2]["expected_sequence"]

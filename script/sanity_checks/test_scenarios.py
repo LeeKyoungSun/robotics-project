@@ -2,7 +2,7 @@ FEEDING_SCENARIO = [
     {
         "step_id": 1,
         "action": "approach",
-        "object": "bowl",
+        "object": "apple",
         "params": {
             "timeout_sec": 60.0,
             "goal_tolerance_m": 0.25,
@@ -93,7 +93,7 @@ STATIC_MULTI_TARGET_SCENARIO = [
     {
         "step_id": 1,
         "action": "approach",
-        "object": "bowl",
+        "object": "apple",
         "params": {
             "timeout_sec": 60.0,
             "goal_tolerance_m": 0.25,

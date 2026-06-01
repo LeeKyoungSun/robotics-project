@@ -2,7 +2,7 @@ Input:
     object_name (str)
 
 Static:
-    ball / bowl / bed / chair / car
+    ball / apple / bed / chair / car
 
 Dynamic:
     dog / cat / person\

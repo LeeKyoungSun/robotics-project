@@ -26,8 +26,8 @@ Camera → YOLOv8 Detection → COCO Class → Action Execution
 - **ball** (class 32) - 놀이용
 - **chair** (class 56) - 장애물
 - **bed** (class 59) - 위치 추적
-- **bowl** (class 45) - 밥그릇 위치
-- **car** (class 2) - 위험 (접근 금지)
+- **apple** (class 47) - 밥 위치
+- **vase** (class 75) - 위험 (접근 금지)
 
 ### 3. action.yaml
 3가지 액션:
@@ -58,7 +58,7 @@ Camera → YOLOv8 Detection → COCO Class → Action Execution
 | ball | ✓ | ✓ | ✓ | 장난감 |
 | chair | ✓ | ✓ | ✗ | 정적 |
 | bed | ✓ | ✓ | ✗ | 정적 |
-| bowl | ✓ | ✓ | ✗ | 정적 |
+| apple | ✓ | ✓ | ✗ | 정적 |
 | car | ✗ | ✓ | ✗ | 위험 |
 
 ## Usage Example

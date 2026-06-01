@@ -36,14 +36,14 @@ bed:
   follow: false
   notes: "Static furniture"
 
-bowl:
+apple:
   approach: true
   observe: true
   follow: false
-  notes: "Pet food bowl location"
+  notes: "Pet food location"
 
-potted_plant:
+vase:
   approach: false
   observe: true
   follow: false
-  notes: "Observe-only potted plant target"
+  notes: "Observe-only vase"

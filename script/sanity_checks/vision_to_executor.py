@@ -19,7 +19,7 @@ OBSERVE_OBJECTS = {
 
 APPROACH_OBJECTS = {
     "ball",
-    "bowl",
+    "apple",
     "bed",
     "chair",
 }
@@ -117,7 +117,7 @@ def main():
             "source": "yolo",
         },
         {
-            "label": "bowl",
+            "label": "apple",
             "confidence": 0.31,
             "bbox": {"x1": 320, "y1": 100, "x2": 380, "y2": 160},
             "source": "yolo",

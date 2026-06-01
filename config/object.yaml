@@ -35,14 +35,14 @@ objects:
     priority: "medium"
     description: "침대 - 위치 추적"
 
-  bowl:
-    class_id: 45
-    category: "kitchen"
+  apple:
+    class_id: 47
+    category: "fruit"
     priority: "medium"
-    description: "밥그릇 - 위치 추적"
+    description: "밥 - 위치 추적"
 
-  potted_plant:
-    class_id: 58
-    category: "plant"
+  vase:
+    class_id: 75
+    category: "indoor
     priority: "low"
     description: "Potted plant - observe-only target"

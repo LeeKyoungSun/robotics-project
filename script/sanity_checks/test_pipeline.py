@@ -210,10 +210,10 @@ class RobotTestPipeline:
 
             required_targets = [
                 "ball_zone",
-                "bowl_zone",
+                "apple_zone",
                 "bed_zone",
                 "chair_zone",
-                "potted_plant_zone",
+                "vase_zone",
             ]
 
             for target_name in required_targets:
@@ -299,10 +299,10 @@ class RobotTestPipeline:
             # target_resolver.py와 동일한 static object mapping 기준
             static_objects = {
                 "ball": "ball_zone",
-                "bowl": "bowl_zone",
+                "apple": "apple_zone",
                 "bed": "bed_zone",
                 "chair": "chair_zone",
-                "potted_plant": "potted_plant_zone",
+                "vase": "vase_zone",
             }
 
             targets = self.targets["targets"]
