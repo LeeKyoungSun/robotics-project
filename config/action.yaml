@@ -17,6 +17,17 @@ observe:
     max_angular_velocity: 0.5
     timeout: 10
 
+search:
+  description: "Search for target using vision while rotating and visiting patrol points"
+  type: "navigation + rotation"
+  framework: "Nav2 + Vision feedback"
+  parameters:
+    timeout: 45
+    scan_duration_sec: 4.0
+    angular_speed: 0.35
+    detection_topic: "/vision/detections"
+    cmd_vel_topic: "/cmd_vel"
+
 follow:
   description: "Track moving target at safe distance"
   type: "tracking"
