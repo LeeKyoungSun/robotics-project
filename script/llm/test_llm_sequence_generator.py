@@ -172,12 +172,76 @@ def test_coerce_preserves_llm_multi_step_plan():
     ]
 
 
+def test_user_request_targets_override_visible_vase():
+    actual = smart_plan_sequence(
+        "강아지랑 고양이 어디 있는지 찾아봐",
+        ["vase"],
+    )
+
+    assert actual == [
+        {
+            "step_id": 1,
+            "action": "observe",
+            "object": "dog",
+            "params": {
+                "duration_sec": 5.0,
+            },
+        },
+        {
+            "step_id": 2,
+            "action": "observe",
+            "object": "cat",
+            "params": {
+                "duration_sec": 5.0,
+            },
+        },
+        {
+            "step_id": 3,
+            "action": "report",
+            "object": None,
+            "params": {
+                "message": "pet monitoring completed",
+            },
+        },
+    ]
+
+
+def test_coerce_rejects_detected_object_plan_when_user_requested_other_targets():
+    actual = coerce_action_sequence(
+        {
+            "sequence": [
+                {
+                    "step_id": 1,
+                    "action": "observe",
+                    "object": "vase",
+                    "params": {},
+                },
+                {
+                    "step_id": 2,
+                    "action": "report",
+                    "object": None,
+                    "params": {"message": "vase checked"},
+                },
+            ]
+        },
+        user_text="강아지랑 고양이 어디 있는지 찾아봐",
+        detected_labels=["vase"],
+    )
+
+    assert [step["object"] for step in actual if step["action"] == "observe"] == [
+        "dog",
+        "cat",
+    ]
+
+
 def test_prompt_requests_intermediate_step_planning():
     prompt = build_prompt(
         "침대 확인하고 잠시 기다린 다음 강아지 상태 알려줘",
         ["bed", "dog"],
     )
 
+    assert "Known world objects" in prompt
+    assert "Use detected objects only as visibility context" in prompt
     assert "You must decide the intermediate steps yourself" in prompt
     assert "Do not only classify the" in prompt
     assert "If the user requests multiple targets, preserve the requested order" in prompt
@@ -188,6 +252,8 @@ def main():
     test_coerce_blocks_vase_approach()
     test_coerce_fills_executor_params_and_step_ids()
     test_coerce_preserves_llm_multi_step_plan()
+    test_user_request_targets_override_visible_vase()
+    test_coerce_rejects_detected_object_plan_when_user_requested_other_targets()
     test_prompt_requests_intermediate_step_planning()
     print("LLM sequence generator tests passed")
 

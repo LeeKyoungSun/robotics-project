@@ -39,6 +39,16 @@ ALLOWED_OBJECTS = [
     "vase",
 ]
 
+KNOWN_WORLD_OBJECTS = [
+    "dog",
+    "cat",
+    "apple",
+    "ball",
+    "bed",
+    "chair",
+    "vase",
+]
+
 ALLOWED_ACTIONS = [
     "approach",
     "observe",
@@ -331,6 +341,17 @@ def pet_monitoring_sequence(object_name: str) -> list[dict[str, Any]]:
     ]
 
 
+def multi_pet_monitoring_sequence(object_names: list[str]) -> list[dict[str, Any]]:
+    sequence = [
+        observe_step(index, object_name)
+        for index, object_name in enumerate(object_names, start=1)
+    ]
+    sequence.append(
+        report_step(len(sequence) + 1, REPORT_MESSAGES["pet_monitoring"])
+    )
+    return sequence
+
+
 def object_check_sequence(object_name: str) -> list[dict[str, Any]]:
     message_key = f"{object_name}_check"
     return [
@@ -350,6 +371,56 @@ def has_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+OBJECT_REQUEST_KEYWORDS = [
+    ("dog", ["dog", "puppy", "강아지", "개"]),
+    ("cat", ["cat", "고양이"]),
+    ("apple", ["apple", "사과", "밥", "급식", "먹이", "food", "meal", "feed", "rice"]),
+    ("ball", ["ball", "공", "장난감", "toy", "play"]),
+    ("bed", ["bed", "침대"]),
+    ("chair", ["chair", "의자"]),
+    ("vase", ["vase", "화분", "plant", "potted"]),
+]
+
+
+def requested_objects_from_text(user_text: str) -> list[str]:
+    text = (user_text or "").lower()
+    requested = []
+
+    for object_name, keywords in OBJECT_REQUEST_KEYWORDS:
+        if object_name not in KNOWN_WORLD_OBJECTS:
+            continue
+
+        match_positions = [
+            text.find(keyword)
+            for keyword in keywords
+            if keyword in text
+        ]
+        if match_positions:
+            requested.append((min(match_positions), object_name))
+
+    return [
+        object_name
+        for _, object_name in sorted(requested)
+    ]
+
+
+def sequence_object_names(sequence: list[dict[str, Any]]) -> set[str]:
+    return {
+        step["object"]
+        for step in sequence
+        if isinstance(step, dict)
+        and step.get("action") in {"approach", "observe", "follow"}
+        and step.get("object")
+    }
+
+
+def multi_object_check_sequence(object_names: list[str]) -> list[dict[str, Any]]:
+    return [
+        approach_step(index, object_name)
+        for index, object_name in enumerate(object_names, start=1)
+    ]
+
+
 def smart_plan_sequence(
     user_text: str,
     detected_labels: list[str] | None,
@@ -361,12 +432,9 @@ def smart_plan_sequence(
 
     text = (user_text or "").lower()
     labels = set(normalize_labels(detected_labels))
+    requested_objects = requested_objects_from_text(text)
 
-    vase_requested = "vase" in labels or has_any(
-        text,
-        ["화분", "plant", "potted", "vase"],
-    )
-    if vase_requested:
+    if "vase" in requested_objects:
         return vase_safety_sequence()
 
     if has_any(text, ["밥", "급식", "먹이", "food", "meal", "feed", "rice", "배고픔"]):
@@ -375,9 +443,24 @@ def smart_plan_sequence(
     if has_any(text, ["놀이", "놀아", "장난감", "공", "toy", "ball", "play", "심심"]):
         return play_sequence()
 
+    requested_pets = [
+        object_name
+        for object_name in requested_objects
+        if object_name in {"dog", "cat"}
+    ]
+    if len(requested_pets) > 1:
+        return multi_pet_monitoring_sequence(requested_pets)
+
+    requested_static_targets = [
+        object_name
+        for object_name in requested_objects
+        if object_name in {"apple", "bed", "chair", "ball"}
+    ]
+    if len(requested_static_targets) > 1:
+        return multi_object_check_sequence(requested_static_targets)
+
     multi_text = all(keyword in text for keyword in ["그릇", "침대", "의자"])
-    multi_labels = {"apple", "bed", "chair"}.issubset(labels)
-    if multi_text or multi_labels:
+    if multi_text:
         return static_multi_target_sequence()
 
     static_target_keywords = [
@@ -396,12 +479,6 @@ def smart_plan_sequence(
         ["상태", "condition", "monitor", "관찰", "확인", "살펴", "체크"],
     )
 
-    if "dog" in labels and monitoring_requested:
-        return pet_monitoring_sequence("dog")
-
-    if "cat" in labels and monitoring_requested:
-        return pet_monitoring_sequence("cat")
-
     if has_any(text, ["강아지", "dog"]) and not labels.intersection(
         {"bed", "chair", "apple", "ball"}
     ):
@@ -410,6 +487,25 @@ def smart_plan_sequence(
     if has_any(text, ["고양이", "cat"]) and not labels.intersection(
         {"bed", "chair", "apple", "ball"}
     ):
+        return pet_monitoring_sequence("cat")
+
+    if "dog" in requested_objects:
+        return pet_monitoring_sequence("dog")
+
+    if "cat" in requested_objects:
+        return pet_monitoring_sequence("cat")
+
+    if "vase" in labels:
+        return vase_safety_sequence()
+
+    multi_labels = {"apple", "bed", "chair"}.issubset(labels)
+    if multi_labels:
+        return static_multi_target_sequence()
+
+    if "dog" in labels and monitoring_requested:
+        return pet_monitoring_sequence("dog")
+
+    if "cat" in labels and monitoring_requested:
         return pet_monitoring_sequence("cat")
 
     for object_name, _ in static_target_keywords:
@@ -546,6 +642,11 @@ def coerce_action_sequence(
     if not coerced:
         return smart_plan_sequence(user_text, detected_labels)
 
+    requested_objects = set(requested_objects_from_text(user_text))
+    planned_objects = sequence_object_names(coerced)
+    if requested_objects and not requested_objects.issubset(planned_objects):
+        return smart_plan_sequence(user_text, detected_labels)
+
     return [
         {
             **step,
@@ -568,6 +669,9 @@ request into a fixed scenario. Choose the target objects, action order, waits,
 observations, and final report based on the user request, detected objects, and
 safety rules.
 
+Known world objects:
+{KNOWN_WORLD_OBJECTS}
+
 Allowed objects:
 {ALLOWED_OBJECTS}
 
@@ -582,8 +686,10 @@ User request:
 
 Planning policy:
 - Prefer the user's explicit request over automatic scenario assumptions.
-- Use detected objects as current context, but you may include a known static
-  object if the user explicitly asks for it.
+- Build the scenario from Known world objects and the user's explicit request.
+- Use detected objects only as visibility context. Do not choose a detected
+  object as the task target when the user explicitly requested another known
+  world object.
 - Keep the sequence as short as possible while still completing the request.
 - Add intermediate steps only when they are useful for the task.
 - Use approach for reachable navigation targets.
