@@ -255,11 +255,29 @@ def test_feeding_cat_searches_food_then_cat():
     ] == [
         ("search", "apple"),
         ("approach", "apple"),
-        ("wait", None),
         ("search", "cat"),
-        ("observe", "cat"),
+        ("feed", "cat"),
         ("report", None),
     ]
+
+
+def test_hungry_dog_uses_food_then_feed_action():
+    actual = smart_plan_sequence(
+        "먹을 거 없어? 강아지가 배고픈 것 같은데",
+        [],
+    )
+
+    assert [
+        (step["action"], step["object"])
+        for step in actual
+    ] == [
+        ("search", "apple"),
+        ("approach", "apple"),
+        ("search", "dog"),
+        ("feed", "dog"),
+        ("report", None),
+    ]
+    assert actual[3]["params"] == {"item": "apple"}
 
 
 def test_where_is_vase_searches_before_observe():
@@ -315,6 +333,8 @@ def test_prompt_requests_intermediate_step_planning():
     assert "Known world objects" in prompt
     assert "Action capabilities" in prompt
     assert "search" in prompt
+    assert "feed" in prompt
+    assert "comment must be a short, natural Korean response" in prompt
     assert "Use detected objects only as visibility context" in prompt
     assert "You must decide the intermediate steps yourself" in prompt
     assert "Do not only classify the" in prompt
@@ -328,6 +348,7 @@ def main():
     test_coerce_preserves_llm_multi_step_plan()
     test_user_request_targets_override_visible_vase()
     test_feeding_cat_searches_food_then_cat()
+    test_hungry_dog_uses_food_then_feed_action()
     test_where_is_vase_searches_before_observe()
     test_coerce_rejects_detected_object_plan_when_user_requested_other_targets()
     test_prompt_requests_intermediate_step_planning()

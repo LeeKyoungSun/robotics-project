@@ -243,6 +243,18 @@ def follow_action(
     return ActionStatus.SKIPPED
 
 
+def feed_action(
+    object_name: str,
+    item: str = "apple",
+) -> ActionStatus:
+    """
+    Feed a pet target with the prepared food item.
+    """
+
+    print(f"[FEED] feeding {object_name} with {item}")
+    return ActionStatus.SUCCESS
+
+
 def report_action(message: str = "sequence completed") -> ActionStatus:
     """
     현재 상태나 결과 메시지를 출력하는 action

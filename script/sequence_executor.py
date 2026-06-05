@@ -164,6 +164,8 @@ class SequenceExecutor:
             return self.execute_search(step)
         if action == "report":
             return self.execute_report(step)
+        if action == "feed":
+            return self.execute_feed(step)
         if action == "follow":
             return self.execute_follow(step)
 
@@ -219,6 +221,16 @@ class SequenceExecutor:
     def execute_report(self, step: dict) -> ActionStatus:
         message = step.get("params", {}).get("message", "")
         return actions.report_action(message=message)
+
+    def execute_feed(self, step: dict) -> ActionStatus:
+        params = step.get("params", {})
+        object_name = step.get("object")
+        item = str(params.get("item", "apple"))
+
+        return actions.feed_action(
+            object_name=object_name,
+            item=item,
+        )
 
     def execute_follow(self, step: dict) -> ActionStatus:
         params = step.get("params", {})

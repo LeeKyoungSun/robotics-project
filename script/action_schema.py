@@ -17,6 +17,7 @@ VALID_ACTIONS = {
     "approach",
     "observe",
     "follow",
+    "feed",
     "search",
     "wait",
     "report",
@@ -75,6 +76,16 @@ ACTION_OBJECT_RULES = {
         "bed": True,
         "chair": True,
         "vase": True,
+    },
+    "feed": {
+        "dog": True,
+        "cat": True,
+        "person": False,
+        "ball": False,
+        "apple": False,
+        "bed": False,
+        "chair": False,
+        "vase": False,
     },
 }
 

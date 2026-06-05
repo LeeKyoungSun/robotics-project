@@ -28,6 +28,13 @@ search:
     detection_topic: "/vision/detections"
     cmd_vel_topic: "/cmd_vel"
 
+feed:
+  description: "Deliver food item to pet target"
+  type: "task"
+  framework: "Python"
+  parameters:
+    item: "apple"
+
 follow:
   description: "Track moving target at safe distance"
   type: "tracking"

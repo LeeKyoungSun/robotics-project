@@ -53,6 +53,7 @@ ALLOWED_ACTIONS = [
     "approach",
     "observe",
     "search",
+    "feed",
     "wait",
     "report",
 ]
@@ -64,6 +65,7 @@ ACTION_CAPABILITIES = {
         "Use this before observing a target that may not currently be visible."
     ),
     "observe": "Inspect or confirm the target once it is visible or reached.",
+    "feed": "Give a prepared food item to a pet target.",
     "wait": "Pause for a specified duration.",
     "report": "Tell the user the result or final status.",
 }
@@ -100,6 +102,10 @@ REPORT_MESSAGES = {
     "apple_check": "apple check completed",
     "ball_check": "ball check completed",
     "no_valid_target": "no valid target detected",
+}
+
+FEED_PARAMS = {
+    "item": "apple",
 }
 
 LABEL_ALIAS = {
@@ -151,6 +157,10 @@ ACTION_ALIAS = {
     "look for": "search",
     "찾": "search",
     "어디": "search",
+    "feed": "feed",
+    "give food": "feed",
+    "밥": "feed",
+    "먹": "feed",
     "wait": "wait",
     "기다": "wait",
     "대기": "wait",
@@ -177,6 +187,9 @@ OBSERVE_OBJECTS = {
 ACTION_SEQUENCE_SCHEMA = {
     "type": "object",
     "properties": {
+        "comment": {
+            "type": "string",
+        },
         "sequence": {
             "type": "array",
             "items": {
@@ -229,6 +242,12 @@ ACTION_SEQUENCE_SCHEMA = {
                                     {"type": "null"},
                                 ]
                             },
+                            "item": {
+                                "anyOf": [
+                                    {"type": "string"},
+                                    {"type": "null"},
+                                ]
+                            },
                         },
                         "required": [
                             "timeout_sec",
@@ -236,6 +255,7 @@ ACTION_SEQUENCE_SCHEMA = {
                             "retry_count",
                             "duration_sec",
                             "message",
+                            "item",
                         ],
                         "additionalProperties": False,
                     },
@@ -250,7 +270,7 @@ ACTION_SEQUENCE_SCHEMA = {
             },
         }
     },
-    "required": ["sequence"],
+    "required": ["comment", "sequence"],
     "additionalProperties": False,
 }
 
@@ -321,6 +341,10 @@ def search_step(step_id: int, object_name: str) -> dict[str, Any]:
     return make_step(step_id, "search", object_name, SEARCH_PARAMS)
 
 
+def feed_step(step_id: int, object_name: str, item: str = "apple") -> dict[str, Any]:
+    return make_step(step_id, "feed", object_name, {"item": item})
+
+
 def wait_step(step_id: int) -> dict[str, Any]:
     return make_step(step_id, "wait", None, WAIT_PARAMS)
 
@@ -338,10 +362,9 @@ def feeding_sequence(pet_object: str = "dog", search_food: bool = False) -> list
     sequence.extend(
         [
             approach_step(len(sequence) + 1, "apple"),
-            wait_step(len(sequence) + 2),
-            search_step(len(sequence) + 3, pet_object),
-            observe_step(len(sequence) + 4, pet_object),
-            report_step(len(sequence) + 5, REPORT_MESSAGES["feeding"]),
+            search_step(len(sequence) + 2, pet_object),
+            feed_step(len(sequence) + 3, pet_object),
+            report_step(len(sequence) + 4, REPORT_MESSAGES["feeding"]),
         ]
     )
     return sequence
@@ -423,7 +446,22 @@ def search_requested(text: str) -> bool:
 OBJECT_REQUEST_KEYWORDS = [
     ("dog", ["dog", "puppy", "강아지", "개"]),
     ("cat", ["cat", "고양이"]),
-    ("apple", ["apple", "사과", "밥", "급식", "먹이", "food", "meal", "feed", "rice"]),
+    (
+        "apple",
+        [
+            "apple",
+            "사과",
+            "밥",
+            "급식",
+            "먹이",
+            "먹을",
+            "배고",
+            "food",
+            "meal",
+            "feed",
+            "rice",
+        ],
+    ),
     ("ball", ["ball", "공", "장난감", "toy", "play"]),
     ("bed", ["bed", "침대"]),
     ("chair", ["chair", "의자"]),
@@ -486,11 +524,14 @@ def smart_plan_sequence(
     if "vase" in requested_objects:
         return vase_safety_sequence()
 
-    if has_any(text, ["밥", "급식", "먹이", "food", "meal", "feed", "rice", "배고픔"]):
+    if has_any(
+        text,
+        ["밥", "급식", "먹이", "먹을", "food", "meal", "feed", "rice", "배고"],
+    ):
         pet_object = "cat" if "cat" in requested_objects else "dog"
         return feeding_sequence(
             pet_object=pet_object,
-            search_food=search_requested(text),
+            search_food=True,
         )
 
     if has_any(text, ["놀이", "놀아", "장난감", "공", "toy", "ball", "play", "심심"]):
@@ -626,6 +667,11 @@ def compact_params(action: str, params: dict[str, Any] | None) -> dict[str, Any]
             ),
         }
 
+    if action == "feed":
+        return {
+            "item": str(param_value(params, "item", FEED_PARAMS["item"])),
+        }
+
     if action == "report":
         message = params.get("message") or "sequence completed"
         return {
@@ -651,6 +697,9 @@ def is_valid_step(step: dict[str, Any]) -> bool:
 
         if action == "observe":
             return object_name in OBSERVE_OBJECTS
+
+        if action == "feed":
+            return object_name in {"dog", "cat"}
 
         if action == "search":
             return object_name in ALLOWED_OBJECTS
@@ -771,7 +820,9 @@ Planning policy:
   the user asks to find/locate an object, or when the task depends on locating
   a pet or object in the world.
 - Use observe to inspect or confirm pet/object state.
-- Use wait when the task implies feeding time, delay, or a short pause.
+- Use feed after locating a food item and the pet when the task implies a pet
+  is hungry, needs a meal, or should be given food.
+- Use wait when the task implies a delay or a short pause.
 - Use report when the user asks to be told the result, or when reporting is the
   natural final step of the task.
 - If the user requests multiple targets, preserve the requested order.
@@ -787,7 +838,7 @@ Safety and object rules:
 
 Examples of valid plans:
 - "강아지 밥 챙겨줘" with dog visible:
-  approach apple -> wait -> search dog -> observe dog -> report
+  search apple -> approach apple -> search dog -> feed dog(item=apple) -> report
 - "침대 보고 의자도 확인해줘":
   approach bed -> search bed -> approach chair -> search chair -> report
 - "화분으로 가까이 가줘":
@@ -797,17 +848,20 @@ Examples of valid plans:
 
 Output rules:
 1. Return JSON only.
-2. Use only allowed objects and actions.
-3. object may be null only for wait and report.
-4. step_id must start from 1 and increase by 1.
-5. approach params: timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2.
-6. observe params: duration_sec=5.0.
-7. search params: timeout_sec=45.0, duration_sec=4.0, retry_count=0.
-8. wait params: duration_sec=2.0 unless requested otherwise.
-9. report params: message.
-10. If no executable plan can be made, return wait 2 seconds and report
+2. comment must be a short, natural Korean response to the user. Do not copy the
+   user's request into a fixed "네, {{request}} 하겠습니다" template.
+3. Use only allowed objects and actions.
+4. object may be null only for wait and report.
+5. step_id must start from 1 and increase by 1.
+6. approach params: timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2.
+7. observe params: duration_sec=5.0.
+8. search params: timeout_sec=45.0, duration_sec=4.0, retry_count=0.
+9. wait params: duration_sec=2.0 unless requested otherwise.
+10. feed params: item=apple unless requested otherwise.
+11. report params: message.
+12. If no executable plan can be made, return wait 2 seconds and report
    "no valid target detected".
-11. For params, include all five schema keys. Use null for unused params.
+13. For params, include all six schema keys. Use null for unused params.
 """
 
 
@@ -823,7 +877,7 @@ def call_llm_api(
     detected_labels: list[str],
     *,
     use_fallback: bool = True,
-) -> dict[str, list[dict[str, Any]]]:
+) -> dict[str, Any]:
     prompt = build_prompt(user_text, detected_labels)
     api_key = os.getenv("OPENAI_API_KEY")
 
@@ -831,6 +885,7 @@ def call_llm_api(
         if not use_fallback:
             raise RuntimeError("OpenAI client or OPENAI_API_KEY is not available")
         return {
+            "comment": "",
             "sequence": smart_plan_sequence(user_text, detected_labels),
         }
 
@@ -850,6 +905,7 @@ def call_llm_api(
         )
         raw_result = parse_response_json(response.output_text)
         return {
+            "comment": str(raw_result.get("comment") or ""),
             "sequence": coerce_action_sequence(
                 raw_result,
                 user_text=user_text,
@@ -861,6 +917,7 @@ def call_llm_api(
         if not use_fallback:
             raise
         return {
+            "comment": "",
             "sequence": smart_plan_sequence(user_text, detected_labels),
         }
 

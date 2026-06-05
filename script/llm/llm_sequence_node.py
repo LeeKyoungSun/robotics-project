@@ -74,6 +74,10 @@ def describe_sequence_step(step):
     if action == "search":
         return f"{target} 찾기"
 
+    if action == "feed":
+        item = display_object_name(params.get("item") or "apple")
+        return f"{item}로 {target} 급식"
+
     if action == "wait":
         return f"{format_duration(params.get('duration_sec'))} 대기"
 
@@ -83,7 +87,8 @@ def describe_sequence_step(step):
     return str(action or "작업")
 
 
-def build_agent_response(sequence):
+def build_agent_response(sequence, comment: str = ""):
+    comment = (comment or "").strip()
     steps = [
         step
         for step in sequence or []
@@ -107,41 +112,46 @@ def build_agent_response(sequence):
         (step for step in steps if step.get("action") == "observe"),
         None,
     )
+    feed_step = next(
+        (step for step in steps if step.get("action") == "feed"),
+        None,
+    )
     has_report = any(step.get("action") == "report" for step in steps)
 
-    if approach_step and observe_step and has_report:
+    if not comment and feed_step:
+        feed_params = feed_step.get("params")
+        feed_params = feed_params if isinstance(feed_params, dict) else {}
+        item = display_object_name(feed_params.get("item") or "apple")
+        pet = display_object_name(feed_step.get("object"))
+        comment = f"{item}를 확인한 뒤 {pet}에게 급식하겠습니다."
+    elif not comment and approach_step and observe_step and has_report:
         comment = (
-            "네, "
             f"{display_object_name(approach_step.get('object'))} 방향으로 이동한 뒤 "
             f"{display_object_name(observe_step.get('object'))} 관찰을 진행하고 "
             "결과를 보고하겠습니다."
         )
-    elif approach_step and has_report:
+    elif not comment and approach_step and has_report:
         comment = (
-            "네, "
             f"{display_object_name(approach_step.get('object'))} 방향으로 이동한 뒤 "
             "결과를 보고하겠습니다."
         )
-    elif observe_step and has_report:
+    elif not comment and observe_step and has_report:
         comment = (
-            "네, "
             f"{display_object_name(observe_step.get('object'))} 관찰 후 "
             "결과를 보고하겠습니다."
         )
-    elif approach_step:
+    elif not comment and approach_step:
         comment = (
-            "네, "
             f"{display_object_name(approach_step.get('object'))} 방향으로 이동하겠습니다."
         )
-    elif observe_step:
+    elif not comment and observe_step:
         comment = (
-            "네, "
             f"{display_object_name(observe_step.get('object'))} 관찰을 진행하겠습니다."
         )
-    elif flow_steps:
-        comment = "네, 요청을 바탕으로 실행 흐름을 진행하겠습니다."
-    else:
-        comment = "네, 실행 가능한 계획을 찾지 못해 잠시 대기하겠습니다."
+    elif not comment and flow_steps:
+        comment = "요청을 바탕으로 실행 흐름을 진행하겠습니다."
+    elif not comment:
+        comment = "실행 가능한 계획을 찾지 못해 잠시 대기하겠습니다."
 
     flow = " -> ".join(
         f"{index}. {description}"
@@ -424,7 +434,10 @@ class LLMSequenceNode(Node):
         try:
             result = call_llm_api(user_text, detected_labels)
             sequence = result.get("sequence", []) if isinstance(result, dict) else []
-            agent_comment, agent_flow = build_agent_response(sequence)
+            agent_comment, agent_flow = build_agent_response(
+                sequence,
+                str(result.get("comment") or "") if isinstance(result, dict) else "",
+            )
 
             msg = String()
             msg.data = json.dumps(result, ensure_ascii=False)

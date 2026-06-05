@@ -16,22 +16,14 @@
       },
       {
         "step_id": 2,
-        "action": "wait",
-        "object": null,
+        "action": "feed",
+        "object": "dog",
         "params": {
-          "duration_sec": 2.0
+          "item": "apple"
         }
       },
       {
         "step_id": 3,
-        "action": "observe",
-        "object": "dog",
-        "params": {
-          "duration_sec": 5.0
-        }
-      },
-      {
-        "step_id": 4,
         "action": "report",
         "object": null,
         "params": {
@@ -173,22 +165,14 @@
       },
       {
         "step_id": 2,
-        "action": "wait",
-        "object": null,
+        "action": "feed",
+        "object": "dog",
         "params": {
-          "duration_sec": 2.0
+          "item": "apple"
         }
       },
       {
         "step_id": 3,
-        "action": "observe",
-        "object": "dog",
-        "params": {
-          "duration_sec": 5.0
-        }
-      },
-      {
-        "step_id": 4,
         "action": "report",
         "object": null,
         "params": {

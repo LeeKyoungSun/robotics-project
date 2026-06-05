@@ -18,7 +18,6 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
-DEFAULT_TASK = "\uc694\uccad\ud558\uc2e0 \uc791\uc5c5\uc744"
 EMPTY_MESSAGE = "agent: \ub0b4\uc6a9\uc744 \uc785\ub825\ud574 \uc8fc\uc138\uc694."
 FLOW_LABEL = "\uc2e4\ud589 \ud750\ub984"
 OBJECT_DISPLAY_NAMES = {
@@ -50,29 +49,6 @@ def parse_bool(value) -> bool:
         return value.strip().lower() in {"1", "true", "yes", "on"}
 
     return bool(value)
-
-
-def summarize_request(user_text: str) -> str:
-    summary = (user_text or "").strip()
-    summary = summary.rstrip(".!? ")
-
-    for suffix in (
-        "\ud574\uc8fc\uc138\uc694",
-        "\ud574 \uc8fc\uc138\uc694",
-        "\ud574\uc918",
-        "\ud574 \uc918",
-        "\uc8fc\uc138\uc694",
-        "\uc918",
-    ):
-        if summary.endswith(suffix):
-            summary = summary[: -len(suffix)].strip()
-            break
-
-    return summary or DEFAULT_TASK
-
-
-def build_ack(user_text: str) -> str:
-    return f"agent: \ub124, {summarize_request(user_text)} \ud558\uaca0\uc2b5\ub2c8\ub2e4."
 
 
 def display_object_name(object_name: str | None) -> str:
@@ -109,6 +85,10 @@ def describe_step(step: dict) -> str:
     if action == "search":
         return f"{target} \ucc3e\uae30"
 
+    if action == "feed":
+        item = display_object_name(params.get("item") or "apple")
+        return f"{item}\ub85c {target} \uae09\uc2dd"
+
     if action == "wait":
         return f"{format_duration(params.get('duration_sec'))} \ub300\uae30"
 
@@ -142,6 +122,14 @@ def describe_sequence(sequence) -> str:
     )
 
 
+def limit_text(text: str, max_chars: int) -> str:
+    text = (text or "").strip()
+    if max_chars <= 0 or len(text) <= max_chars:
+        return text
+
+    return text[: max_chars - 1].rstrip() + "\u2026"
+
+
 class AgentConsole(Node):
     def __init__(self):
         super().__init__("agent_console")
@@ -150,9 +138,13 @@ class AgentConsole(Node):
         self.declare_parameter("agent_response_topic", "/llm/agent_response")
         self.declare_parameter("execution_status_topic", "/vision/execution_status")
         self.declare_parameter("show_auto_responses", False)
+        self.declare_parameter("max_agent_response_chars", 180)
 
         self.show_auto_responses = parse_bool(
             self.get_parameter("show_auto_responses").value
+        )
+        self.max_agent_response_chars = int(
+            self.get_parameter("max_agent_response_chars").value
         )
 
         self.user_request_pub = self.create_publisher(
@@ -203,8 +195,6 @@ class AgentConsole(Node):
             msg.data = json.dumps({"text": user_text}, ensure_ascii=False)
             self.user_request_pub.publish(msg)
 
-            print(build_ack(user_text), flush=True)
-
     def agent_response_callback(self, msg: String):
         try:
             payload = json.loads(msg.data)
@@ -217,6 +207,13 @@ class AgentConsole(Node):
 
         if not payload.get("from_user") and not self.show_auto_responses:
             return
+
+        comment = limit_text(
+            str(payload.get("comment") or ""),
+            self.max_agent_response_chars,
+        )
+        if comment:
+            print(f"agent: {comment}", flush=True)
 
         flow = str(payload.get("flow") or "").strip()
         if flow:
