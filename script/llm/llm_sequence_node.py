@@ -71,6 +71,9 @@ def describe_sequence_step(step):
     if action == "observe":
         return f"{target} 관찰"
 
+    if action == "search":
+        return f"{target} 찾기"
+
     if action == "wait":
         return f"{format_duration(params.get('duration_sec'))} 대기"
 

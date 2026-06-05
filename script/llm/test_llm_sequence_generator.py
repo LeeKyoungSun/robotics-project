@@ -24,13 +24,30 @@ def load_cases() -> list[dict]:
     return json.loads(case_file.read_text(encoding="utf-8"))
 
 
+def without_search_steps(sequence: list[dict]) -> list[dict]:
+    return [
+        {
+            **step,
+            "step_id": index,
+        }
+        for index, step in enumerate(
+            [
+                step
+                for step in sequence
+                if step.get("action") != "search"
+            ],
+            start=1,
+        )
+    ]
+
+
 def test_smart_planner_cases():
     for case in load_cases():
         actual = smart_plan_sequence(
             case["user_text"],
             case["detected_labels"],
         )
-        assert actual == case["expected_sequence"], case["scenario"]
+        assert without_search_steps(actual) == case["expected_sequence"], case["scenario"]
 
 
 def test_coerce_blocks_vase_approach():
@@ -53,7 +70,7 @@ def test_coerce_blocks_vase_approach():
         detected_labels=["vase"],
     )
 
-    assert actual == load_cases()[2]["expected_sequence"]
+    assert without_search_steps(actual) == load_cases()[2]["expected_sequence"]
 
 
 def test_coerce_fills_executor_params_and_step_ids():
@@ -181,6 +198,16 @@ def test_user_request_targets_override_visible_vase():
     assert actual == [
         {
             "step_id": 1,
+            "action": "search",
+            "object": "dog",
+            "params": {
+                "timeout_sec": 45.0,
+                "duration_sec": 4.0,
+                "retry_count": 0,
+            },
+        },
+        {
+            "step_id": 2,
             "action": "observe",
             "object": "dog",
             "params": {
@@ -188,7 +215,17 @@ def test_user_request_targets_override_visible_vase():
             },
         },
         {
-            "step_id": 2,
+            "step_id": 3,
+            "action": "search",
+            "object": "cat",
+            "params": {
+                "timeout_sec": 45.0,
+                "duration_sec": 4.0,
+                "retry_count": 0,
+            },
+        },
+        {
+            "step_id": 4,
             "action": "observe",
             "object": "cat",
             "params": {
@@ -196,13 +233,48 @@ def test_user_request_targets_override_visible_vase():
             },
         },
         {
-            "step_id": 3,
+            "step_id": 5,
             "action": "report",
             "object": None,
             "params": {
                 "message": "pet monitoring completed",
             },
         },
+    ]
+
+
+def test_feeding_cat_searches_food_then_cat():
+    actual = smart_plan_sequence(
+        "먹을 거 찾아서 고양이 밥 줘",
+        ["vase"],
+    )
+
+    assert [
+        (step["action"], step["object"])
+        for step in actual
+    ] == [
+        ("search", "apple"),
+        ("approach", "apple"),
+        ("wait", None),
+        ("search", "cat"),
+        ("observe", "cat"),
+        ("report", None),
+    ]
+
+
+def test_where_is_vase_searches_before_observe():
+    actual = smart_plan_sequence(
+        "Where's a vase?",
+        [],
+    )
+
+    assert [
+        (step["action"], step["object"])
+        for step in actual
+    ] == [
+        ("search", "vase"),
+        ("observe", "vase"),
+        ("report", None),
     ]
 
 
@@ -253,6 +325,8 @@ def main():
     test_coerce_fills_executor_params_and_step_ids()
     test_coerce_preserves_llm_multi_step_plan()
     test_user_request_targets_override_visible_vase()
+    test_feeding_cat_searches_food_then_cat()
+    test_where_is_vase_searches_before_observe()
     test_coerce_rejects_detected_object_plan_when_user_requested_other_targets()
     test_prompt_requests_intermediate_step_planning()
     print("LLM sequence generator tests passed")

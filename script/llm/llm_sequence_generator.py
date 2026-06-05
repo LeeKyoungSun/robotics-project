@@ -52,6 +52,7 @@ KNOWN_WORLD_OBJECTS = [
 ALLOWED_ACTIONS = [
     "approach",
     "observe",
+    "search",
     "wait",
     "report",
 ]
@@ -64,6 +65,12 @@ APPROACH_PARAMS = {
 
 OBSERVE_PARAMS = {
     "duration_sec": 5.0,
+}
+
+SEARCH_PARAMS = {
+    "timeout_sec": 45.0,
+    "duration_sec": 4.0,
+    "retry_count": 0,
 }
 
 WAIT_PARAMS = {
@@ -128,6 +135,11 @@ ACTION_ALIAS = {
     "관찰": "observe",
     "확인": "observe",
     "살펴": "observe",
+    "search": "search",
+    "find": "search",
+    "look for": "search",
+    "찾": "search",
+    "어디": "search",
     "wait": "wait",
     "기다": "wait",
     "대기": "wait",
@@ -294,6 +306,10 @@ def observe_step(step_id: int, object_name: str) -> dict[str, Any]:
     return make_step(step_id, "observe", object_name, OBSERVE_PARAMS)
 
 
+def search_step(step_id: int, object_name: str) -> dict[str, Any]:
+    return make_step(step_id, "search", object_name, SEARCH_PARAMS)
+
+
 def wait_step(step_id: int) -> dict[str, Any]:
     return make_step(step_id, "wait", None, WAIT_PARAMS)
 
@@ -302,27 +318,39 @@ def report_step(step_id: int, message: str) -> dict[str, Any]:
     return make_step(step_id, "report", None, {"message": message})
 
 
-def feeding_sequence() -> list[dict[str, Any]]:
-    return [
-        approach_step(1, "apple"),
-        wait_step(2),
-        observe_step(3, "dog"),
-        report_step(4, REPORT_MESSAGES["feeding"]),
-    ]
+def feeding_sequence(pet_object: str = "dog", search_food: bool = False) -> list[dict[str, Any]]:
+    sequence = []
+
+    if search_food:
+        sequence.append(search_step(len(sequence) + 1, "apple"))
+
+    sequence.extend(
+        [
+            approach_step(len(sequence) + 1, "apple"),
+            wait_step(len(sequence) + 2),
+            search_step(len(sequence) + 3, pet_object),
+            observe_step(len(sequence) + 4, pet_object),
+            report_step(len(sequence) + 5, REPORT_MESSAGES["feeding"]),
+        ]
+    )
+    return sequence
 
 
 def play_sequence() -> list[dict[str, Any]]:
     return [
-        approach_step(1, "ball"),
-        observe_step(2, "dog"),
-        report_step(3, REPORT_MESSAGES["play"]),
+        search_step(1, "ball"),
+        approach_step(2, "ball"),
+        search_step(3, "dog"),
+        observe_step(4, "dog"),
+        report_step(5, REPORT_MESSAGES["play"]),
     ]
 
 
 def vase_safety_sequence() -> list[dict[str, Any]]:
     return [
-        observe_step(1, "vase"),
-        report_step(2, REPORT_MESSAGES["vase_safety"]),
+        search_step(1, "vase"),
+        observe_step(2, "vase"),
+        report_step(3, REPORT_MESSAGES["vase_safety"]),
     ]
 
 
@@ -336,16 +364,18 @@ def static_multi_target_sequence() -> list[dict[str, Any]]:
 
 def pet_monitoring_sequence(object_name: str) -> list[dict[str, Any]]:
     return [
-        observe_step(1, object_name),
-        report_step(2, REPORT_MESSAGES["pet_monitoring"]),
+        search_step(1, object_name),
+        observe_step(2, object_name),
+        report_step(3, REPORT_MESSAGES["pet_monitoring"]),
     ]
 
 
 def multi_pet_monitoring_sequence(object_names: list[str]) -> list[dict[str, Any]]:
-    sequence = [
-        observe_step(index, object_name)
-        for index, object_name in enumerate(object_names, start=1)
-    ]
+    sequence = []
+    for object_name in object_names:
+        sequence.append(search_step(len(sequence) + 1, object_name))
+        sequence.append(observe_step(len(sequence) + 1, object_name))
+
     sequence.append(
         report_step(len(sequence) + 1, REPORT_MESSAGES["pet_monitoring"])
     )
@@ -356,7 +386,8 @@ def object_check_sequence(object_name: str) -> list[dict[str, Any]]:
     message_key = f"{object_name}_check"
     return [
         approach_step(1, object_name),
-        report_step(2, REPORT_MESSAGES.get(message_key, f"{object_name} check completed")),
+        search_step(2, object_name),
+        report_step(3, REPORT_MESSAGES.get(message_key, f"{object_name} check completed")),
     ]
 
 
@@ -369,6 +400,13 @@ def no_valid_target_sequence() -> list[dict[str, Any]]:
 
 def has_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
+
+
+def search_requested(text: str) -> bool:
+    return has_any(
+        text,
+        ["찾", "어디", "where", "find", "search", "look for", "locate"],
+    )
 
 
 OBJECT_REQUEST_KEYWORDS = [
@@ -409,7 +447,7 @@ def sequence_object_names(sequence: list[dict[str, Any]]) -> set[str]:
         step["object"]
         for step in sequence
         if isinstance(step, dict)
-        and step.get("action") in {"approach", "observe", "follow"}
+        and step.get("action") in {"approach", "observe", "search", "follow"}
         and step.get("object")
     }
 
@@ -438,7 +476,11 @@ def smart_plan_sequence(
         return vase_safety_sequence()
 
     if has_any(text, ["밥", "급식", "먹이", "food", "meal", "feed", "rice", "배고픔"]):
-        return feeding_sequence()
+        pet_object = "cat" if "cat" in requested_objects else "dog"
+        return feeding_sequence(
+            pet_object=pet_object,
+            search_food=search_requested(text),
+        )
 
     if has_any(text, ["놀이", "놀아", "장난감", "공", "toy", "ball", "play", "심심"]):
         return play_sequence()
@@ -553,6 +595,19 @@ def compact_params(action: str, params: dict[str, Any] | None) -> dict[str, Any]
             ),
         }
 
+    if action == "search":
+        return {
+            "timeout_sec": float(
+                param_value(params, "timeout_sec", SEARCH_PARAMS["timeout_sec"])
+            ),
+            "duration_sec": float(
+                param_value(params, "duration_sec", SEARCH_PARAMS["duration_sec"])
+            ),
+            "retry_count": int(
+                param_value(params, "retry_count", SEARCH_PARAMS["retry_count"])
+            ),
+        }
+
     if action == "wait":
         return {
             "duration_sec": float(
@@ -585,6 +640,9 @@ def is_valid_step(step: dict[str, Any]) -> bool:
 
         if action == "observe":
             return object_name in OBSERVE_OBJECTS
+
+        if action == "search":
+            return object_name in ALLOWED_OBJECTS
 
         return False
 
@@ -626,6 +684,8 @@ def coerce_action_sequence(
                 action = "observe"
             elif object_name in APPROACH_OBJECTS:
                 action = "approach"
+            elif object_name in ALLOWED_OBJECTS:
+                action = "search"
             else:
                 continue
 
@@ -693,6 +753,9 @@ Planning policy:
 - Keep the sequence as short as possible while still completing the request.
 - Add intermediate steps only when they are useful for the task.
 - Use approach for reachable navigation targets.
+- Use search before observe when the target may not already be visible, when
+  the user asks to find/locate an object, or when the task depends on locating
+  a pet or object in the world.
 - Use observe to inspect or confirm pet/object state.
 - Use wait when the task implies feeding time, delay, or a short pause.
 - Use report when the user asks to be told the result, or when reporting is the
@@ -710,13 +773,13 @@ Safety and object rules:
 
 Examples of valid plans:
 - "강아지 밥 챙겨줘" with dog visible:
-  approach apple -> wait -> observe dog -> report
+  approach apple -> wait -> search dog -> observe dog -> report
 - "침대 보고 의자도 확인해줘":
-  approach bed -> approach chair -> report
+  approach bed -> search bed -> approach chair -> search chair -> report
 - "화분으로 가까이 가줘":
-  observe vase -> report
+  search vase -> observe vase -> report
 - "강아지 상태 알려줘":
-  observe dog -> report
+  search dog -> observe dog -> report
 
 Output rules:
 1. Return JSON only.
@@ -725,11 +788,12 @@ Output rules:
 4. step_id must start from 1 and increase by 1.
 5. approach params: timeout_sec=60.0, goal_tolerance_m=0.25, retry_count=2.
 6. observe params: duration_sec=5.0.
-7. wait params: duration_sec=2.0 unless requested otherwise.
-8. report params: message.
-9. If no executable plan can be made, return wait 2 seconds and report
+7. search params: timeout_sec=45.0, duration_sec=4.0, retry_count=0.
+8. wait params: duration_sec=2.0 unless requested otherwise.
+9. report params: message.
+10. If no executable plan can be made, return wait 2 seconds and report
    "no valid target detected".
-10. For params, include all five schema keys. Use null for unused params.
+11. For params, include all five schema keys. Use null for unused params.
 """
 
 

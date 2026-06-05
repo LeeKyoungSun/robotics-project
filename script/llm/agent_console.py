@@ -98,6 +98,9 @@ def describe_step(step: dict) -> str:
     if action == "observe":
         return f"{target} \uad00\ucc30"
 
+    if action == "search":
+        return f"{target} \ucc3e\uae30"
+
     if action == "wait":
         return f"{format_duration(params.get('duration_sec'))} \ub300\uae30"
 
