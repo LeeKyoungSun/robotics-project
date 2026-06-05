@@ -57,6 +57,17 @@ ALLOWED_ACTIONS = [
     "report",
 ]
 
+ACTION_CAPABILITIES = {
+    "approach": "Navigate to a known reachable target location.",
+    "search": (
+        "Look for a target with vision by rotating and visiting patrol points. "
+        "Use this before observing a target that may not currently be visible."
+    ),
+    "observe": "Inspect or confirm the target once it is visible or reached.",
+    "wait": "Pause for a specified duration.",
+    "report": "Tell the user the result or final status.",
+}
+
 APPROACH_PARAMS = {
     "timeout_sec": 60.0,
     "goal_tolerance_m": 0.25,
@@ -737,6 +748,9 @@ Allowed objects:
 
 Allowed actions:
 {ALLOWED_ACTIONS}
+
+Action capabilities:
+{json.dumps(ACTION_CAPABILITIES, ensure_ascii=False, indent=2)}
 
 Detected objects after normalization:
 {normalized}

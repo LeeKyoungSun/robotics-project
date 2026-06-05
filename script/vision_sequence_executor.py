@@ -19,6 +19,7 @@ if default_fastdds_profile.exists():
 import rclpy
 
 import json
+import signal
 import subprocess
 import tempfile
 import time
@@ -217,6 +218,7 @@ class VisionSequenceExecutorNode(Node):
             shell=True,
             executable="/bin/bash",
             env=env,
+            start_new_session=True,
         )
 
         self._sequence_file = sequence_file.name
@@ -294,13 +296,51 @@ class VisionSequenceExecutorNode(Node):
         )
 
     def destroy_node(self):
-        if (
-            self._process is not None
-            and self._process.poll() is None
-        ):
-            self._process.terminate()
+        self.stop_sequence_process()
 
         super().destroy_node()
+
+    def stop_sequence_process(self):
+        if self._process is None or self._process.poll() is not None:
+            return
+
+        self.get_logger().info(
+            f"[VISION_EXECUTOR] stopping sequence process: pid={self._process.pid}"
+        )
+
+        try:
+            if hasattr(os, "killpg"):
+                os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
+            else:
+                self._process.terminate()
+
+            self._process.wait(timeout=3.0)
+
+        except subprocess.TimeoutExpired:
+            self.get_logger().warn(
+                "[VISION_EXECUTOR] sequence process did not stop; killing"
+            )
+            if hasattr(os, "killpg"):
+                os.killpg(os.getpgid(self._process.pid), signal.SIGKILL)
+            else:
+                self._process.kill()
+            self._process.wait(timeout=3.0)
+
+        except ProcessLookupError:
+            pass
+
+        finally:
+            if self._sequence_file:
+                try:
+                    Path(self._sequence_file).unlink(missing_ok=True)
+                except OSError as exc:
+                    self.get_logger().warn(
+                        f"[VISION_EXECUTOR] failed to remove temp file: {exc}"
+                    )
+
+            self._process = None
+            self._sequence_file = None
+            self._current_sequence = []
     
     def clean_params(self, sequence):
         cleaned_sequence = []

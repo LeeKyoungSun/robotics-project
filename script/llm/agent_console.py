@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import json
+import sys
 import threading
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import String
+
+
+if hasattr(sys.stdin, "reconfigure"):
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 DEFAULT_TASK = "\uc694\uccad\ud558\uc2e0 \uc791\uc5c5\uc744"
@@ -175,6 +183,12 @@ class AgentConsole(Node):
         while rclpy.ok():
             try:
                 user_text = input("user: ").strip()
+            except UnicodeDecodeError:
+                print(
+                    "agent: \uc785\ub825 \uc778\ucf54\ub529\uc744 \uc77d\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \uc785\ub825\ud574 \uc8fc\uc138\uc694.",
+                    flush=True,
+                )
+                continue
             except EOFError:
                 return
             except KeyboardInterrupt:
@@ -263,7 +277,7 @@ def main(args=None):
 
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         node.destroy_node()

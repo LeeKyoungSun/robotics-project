@@ -313,6 +313,8 @@ def test_prompt_requests_intermediate_step_planning():
     )
 
     assert "Known world objects" in prompt
+    assert "Action capabilities" in prompt
+    assert "search" in prompt
     assert "Use detected objects only as visibility context" in prompt
     assert "You must decide the intermediate steps yourself" in prompt
     assert "Do not only classify the" in prompt
