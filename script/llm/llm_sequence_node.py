@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import json
-import sys
 import threading
 import time
 from collections import Counter
@@ -207,10 +206,11 @@ class LLMSequenceNode(Node):
 
         self.declare_parameter("detection_topic", "/vision/detections")
         self.declare_parameter("user_request_topic", "/llm/user_request")
+        self.declare_parameter("agent_response_topic", "/llm/agent_response")
         self.declare_parameter("action_sequence_topic", "/vision/action_sequence")
         self.declare_parameter("timer_period_sec", 5.0)
         self.declare_parameter("require_user_request", False)
-        self.declare_parameter("interactive_input", True)
+        self.declare_parameter("interactive_input", False)
 
         self.detected_labels = []
         self.last_valid_labels = []
@@ -243,6 +243,11 @@ class LLMSequenceNode(Node):
             str(self.get_parameter("action_sequence_topic").value),
             10,
         )
+        self.agent_response_pub = self.create_publisher(
+            String,
+            str(self.get_parameter("agent_response_topic").value),
+            10,
+        )
 
         timer_period_sec = max(
             0.5,
@@ -252,20 +257,16 @@ class LLMSequenceNode(Node):
 
         self.get_logger().info(
             "LLM sequence node started. "
-            f"user_request_topic={self.get_parameter('user_request_topic').value}"
+            f"user_request_topic={self.get_parameter('user_request_topic').value}, "
+            f"agent_response_topic={self.get_parameter('agent_response_topic').value}"
         )
 
         if self.interactive_input_enabled:
-            if sys.stdin is not None and sys.stdin.isatty():
-                self.input_thread = threading.Thread(
-                    target=self.interactive_input_loop,
-                    daemon=True,
-                )
-                self.input_thread.start()
-            else:
-                self.get_logger().warn(
-                    "Interactive input disabled because stdin is not a TTY."
-                )
+            self.input_thread = threading.Thread(
+                target=self.interactive_input_loop,
+                daemon=True,
+            )
+            self.input_thread.start()
 
     def get_bool_parameter(self, name):
         value = self.get_parameter(name).value
@@ -422,12 +423,21 @@ class LLMSequenceNode(Node):
             sequence = result.get("sequence", []) if isinstance(result, dict) else []
             agent_comment, agent_flow = build_agent_response(sequence)
 
-            print(f"agent: {agent_comment}", flush=True)
-            print(f"agent: 실행 흐름: {agent_flow}", flush=True)
-
             msg = String()
             msg.data = json.dumps(result, ensure_ascii=False)
             self.sequence_pub.publish(msg)
+
+            agent_msg = String()
+            agent_msg.data = json.dumps(
+                {
+                    "comment": agent_comment,
+                    "flow": agent_flow,
+                    "request": user_text,
+                    "from_user": from_user,
+                },
+                ensure_ascii=False,
+            )
+            self.agent_response_pub.publish(agent_msg)
 
             if from_user and request_id is not None:
                 with self.request_lock:
