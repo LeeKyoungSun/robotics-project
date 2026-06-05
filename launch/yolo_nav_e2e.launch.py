@@ -16,6 +16,7 @@ def generate_launch_description():
     display_fps = LaunchConfiguration("display_fps")
     detection_hold_frames = LaunchConfiguration("detection_hold_frames")
     execute_once = LaunchConfiguration("execute_once")
+    require_user_request = LaunchConfiguration("require_user_request")
 
     return LaunchDescription(
         [
@@ -55,6 +56,10 @@ def generate_launch_description():
                 "execute_once",
                 default_value="true",
             ),
+            DeclareLaunchArgument(
+                "require_user_request",
+                default_value="true",
+            ),
             Node(
                 package="pet_robot_pkg",
                 executable="camera_image_processor",
@@ -81,6 +86,18 @@ def generate_launch_description():
                 parameters=[
                     {
                         "execute_once": execute_once,
+                    }
+                ],
+            ),
+            Node(
+                package="pet_robot_pkg",
+                executable="llm_sequence_node",
+                name="llm_sequence_node",
+                output="screen",
+                parameters=[
+                    {
+                        "require_user_request": require_user_request,
+                        "interactive_input": False,
                     }
                 ],
             ),

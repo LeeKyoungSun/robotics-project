@@ -3,46 +3,46 @@ objects:
     class_id: 16
     category: "animal"
     priority: "highest"
-    description: "주요 타겟 - 강아지"
+    description: "Primary pet target - dog"
 
   cat:
     class_id: 15
     category: "animal"
     priority: "highest"
-    description: "주요 타겟 - 고양이"
+    description: "Primary pet target - cat"
 
   person:
     class_id: 0
     category: "people"
     priority: "high"
-    description: "소유자 - 추종 대상"
+    description: "Owner or person target"
 
   ball:
     class_id: 32
     category: "sports"
     priority: "high"
-    description: "장난감 - 놀이용"
+    description: "Toy for play"
 
   chair:
     class_id: 56
     category: "furniture"
     priority: "medium"
-    description: "가구 - 장애물"
+    description: "Chair location"
 
   bed:
     class_id: 59
     category: "furniture"
     priority: "medium"
-    description: "침대 - 위치 추적"
+    description: "Bed location"
 
   apple:
     class_id: 47
     category: "fruit"
     priority: "medium"
-    description: "밥 - 위치 추적"
+    description: "Pet food location"
 
   vase:
     class_id: 75
-    category: "indoor
+    category: "indoor"
     priority: "low"
-    description: "Potted plant - observe-only target"
+    description: "Vase - observe-only target"

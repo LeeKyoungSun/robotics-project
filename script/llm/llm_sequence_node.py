@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import json
-import sys
 import threading
 import time
 from collections import Counter
@@ -72,6 +71,13 @@ def describe_sequence_step(step):
     if action == "observe":
         return f"{target} 관찰"
 
+    if action == "search":
+        return f"{target} 찾기"
+
+    if action == "feed":
+        item = display_object_name(params.get("item") or "apple")
+        return f"{item}로 {target} 급식"
+
     if action == "wait":
         return f"{format_duration(params.get('duration_sec'))} 대기"
 
@@ -81,7 +87,8 @@ def describe_sequence_step(step):
     return str(action or "작업")
 
 
-def build_agent_response(sequence):
+def build_agent_response(sequence, comment: str = ""):
+    comment = (comment or "").strip()
     steps = [
         step
         for step in sequence or []
@@ -105,41 +112,46 @@ def build_agent_response(sequence):
         (step for step in steps if step.get("action") == "observe"),
         None,
     )
+    feed_step = next(
+        (step for step in steps if step.get("action") == "feed"),
+        None,
+    )
     has_report = any(step.get("action") == "report" for step in steps)
 
-    if approach_step and observe_step and has_report:
+    if not comment and feed_step:
+        feed_params = feed_step.get("params")
+        feed_params = feed_params if isinstance(feed_params, dict) else {}
+        item = display_object_name(feed_params.get("item") or "apple")
+        pet = display_object_name(feed_step.get("object"))
+        comment = f"{item}를 확인한 뒤 {pet}에게 급식하겠습니다."
+    elif not comment and approach_step and observe_step and has_report:
         comment = (
-            "네, "
             f"{display_object_name(approach_step.get('object'))} 방향으로 이동한 뒤 "
             f"{display_object_name(observe_step.get('object'))} 관찰을 진행하고 "
             "결과를 보고하겠습니다."
         )
-    elif approach_step and has_report:
+    elif not comment and approach_step and has_report:
         comment = (
-            "네, "
             f"{display_object_name(approach_step.get('object'))} 방향으로 이동한 뒤 "
             "결과를 보고하겠습니다."
         )
-    elif observe_step and has_report:
+    elif not comment and observe_step and has_report:
         comment = (
-            "네, "
             f"{display_object_name(observe_step.get('object'))} 관찰 후 "
             "결과를 보고하겠습니다."
         )
-    elif approach_step:
+    elif not comment and approach_step:
         comment = (
-            "네, "
             f"{display_object_name(approach_step.get('object'))} 방향으로 이동하겠습니다."
         )
-    elif observe_step:
+    elif not comment and observe_step:
         comment = (
-            "네, "
             f"{display_object_name(observe_step.get('object'))} 관찰을 진행하겠습니다."
         )
-    elif flow_steps:
-        comment = "네, 요청을 바탕으로 실행 흐름을 진행하겠습니다."
-    else:
-        comment = "네, 실행 가능한 계획을 찾지 못해 잠시 대기하겠습니다."
+    elif not comment and flow_steps:
+        comment = "요청을 바탕으로 실행 흐름을 진행하겠습니다."
+    elif not comment:
+        comment = "실행 가능한 계획을 찾지 못해 잠시 대기하겠습니다."
 
     flow = " -> ".join(
         f"{index}. {description}"
@@ -207,10 +219,11 @@ class LLMSequenceNode(Node):
 
         self.declare_parameter("detection_topic", "/vision/detections")
         self.declare_parameter("user_request_topic", "/llm/user_request")
+        self.declare_parameter("agent_response_topic", "/llm/agent_response")
         self.declare_parameter("action_sequence_topic", "/vision/action_sequence")
         self.declare_parameter("timer_period_sec", 5.0)
         self.declare_parameter("require_user_request", False)
-        self.declare_parameter("interactive_input", True)
+        self.declare_parameter("interactive_input", False)
 
         self.detected_labels = []
         self.last_valid_labels = []
@@ -243,6 +256,11 @@ class LLMSequenceNode(Node):
             str(self.get_parameter("action_sequence_topic").value),
             10,
         )
+        self.agent_response_pub = self.create_publisher(
+            String,
+            str(self.get_parameter("agent_response_topic").value),
+            10,
+        )
 
         timer_period_sec = max(
             0.5,
@@ -252,20 +270,16 @@ class LLMSequenceNode(Node):
 
         self.get_logger().info(
             "LLM sequence node started. "
-            f"user_request_topic={self.get_parameter('user_request_topic').value}"
+            f"user_request_topic={self.get_parameter('user_request_topic').value}, "
+            f"agent_response_topic={self.get_parameter('agent_response_topic').value}"
         )
 
         if self.interactive_input_enabled:
-            if sys.stdin is not None and sys.stdin.isatty():
-                self.input_thread = threading.Thread(
-                    target=self.interactive_input_loop,
-                    daemon=True,
-                )
-                self.input_thread.start()
-            else:
-                self.get_logger().warn(
-                    "Interactive input disabled because stdin is not a TTY."
-                )
+            self.input_thread = threading.Thread(
+                target=self.interactive_input_loop,
+                daemon=True,
+            )
+            self.input_thread.start()
 
     def get_bool_parameter(self, name):
         value = self.get_parameter(name).value
@@ -420,14 +434,26 @@ class LLMSequenceNode(Node):
         try:
             result = call_llm_api(user_text, detected_labels)
             sequence = result.get("sequence", []) if isinstance(result, dict) else []
-            agent_comment, agent_flow = build_agent_response(sequence)
-
-            print(f"agent: {agent_comment}", flush=True)
-            print(f"agent: 실행 흐름: {agent_flow}", flush=True)
+            agent_comment, agent_flow = build_agent_response(
+                sequence,
+                str(result.get("comment") or "") if isinstance(result, dict) else "",
+            )
 
             msg = String()
             msg.data = json.dumps(result, ensure_ascii=False)
             self.sequence_pub.publish(msg)
+
+            agent_msg = String()
+            agent_msg.data = json.dumps(
+                {
+                    "comment": agent_comment,
+                    "flow": agent_flow,
+                    "request": user_text,
+                    "from_user": from_user,
+                },
+                ensure_ascii=False,
+            )
+            self.agent_response_pub.publish(agent_msg)
 
             if from_user and request_id is not None:
                 with self.request_lock:

@@ -14,6 +14,7 @@ class TargetResolver:
     """
 
     STATIC_OBJECTS = {
+        "safe_observe": "safe_observe_zone",
         "ball": "ball_zone",
         "apple": "apple_zone",
         "bed": "bed_zone",
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     resolver = TargetResolver()
 
     test_objects = [
-        "bowl",
+        "apple",
         "bed",
         "chair",
         "cat",

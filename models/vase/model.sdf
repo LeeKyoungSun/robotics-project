@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <model name="potted_plant_v1">
+  <model name="vase">
     <static>true</static>
     <link name="link">
       <pose>0 0 0 0 0 0</pose>
       <visual name="visual">
         <geometry>
           <mesh>
-            <uri>model://potted_plant_v1/Begonia_v3_L3.123ce64489bf-c1e4-4eec-bd98-f34221d4d83d/10435_Begonia_v3_L3.obj</uri>
+            <uri>model://vase/Begonia_v3_L3.123ce64489bf-c1e4-4eec-bd98-f34221d4d83d/10435_Begonia_v3_L3.obj</uri>
             <scale>0.01 0.01 0.01</scale>
           </mesh>
         </geometry>

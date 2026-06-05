@@ -66,11 +66,11 @@ PLAY_SCENARIO = [
 ]
 
 
-POTTED_PLANT_SAFETY_SCENARIO = [
+VASE_SAFETY_SCENARIO = [
     {
         "step_id": 1,
         "action": "observe",
-        "object": "potted_plant",
+        "object": "vase",
         "params": {
             "duration_sec": 5.0,
         },
@@ -81,7 +81,7 @@ POTTED_PLANT_SAFETY_SCENARIO = [
         "object": None,
         "params": {
             "message": (
-                "potted plant is observe-only target. "
+                "vase is observe-only target. "
                 "approach blocked for safety"
             ),
         },
@@ -123,11 +123,11 @@ STATIC_MULTI_TARGET_SCENARIO = [
 ]
 
 
-INVALID_POTTED_PLANT_APPROACH_SCENARIO = [
+INVALID_VASE_APPROACH_SCENARIO = [
     {
         "step_id": 1,
         "action": "approach",
-        "object": "potted_plant",
+        "object": "vase",
         "params": {
             "timeout_sec": 60.0,
             "goal_tolerance_m": 0.25,
@@ -140,7 +140,7 @@ INVALID_POTTED_PLANT_APPROACH_SCENARIO = [
 SCENARIOS = {
     "feeding": FEEDING_SCENARIO,
     "play": PLAY_SCENARIO,
-    "potted_plant_safety": POTTED_PLANT_SAFETY_SCENARIO,
+    "vase_safety": VASE_SAFETY_SCENARIO,
     "static_multi_target": STATIC_MULTI_TARGET_SCENARIO,
-    "invalid_potted_plant_approach": INVALID_POTTED_PLANT_APPROACH_SCENARIO,
+    "invalid_vase_approach": INVALID_VASE_APPROACH_SCENARIO,
 }

@@ -24,6 +24,23 @@ RETRYABLE_STATUSES = {
     ActionStatus.REJECTED,
 }
 
+STATIC_SEARCH_TARGETS = {
+    "apple",
+    "ball",
+    "bed",
+    "cat",
+    "chair",
+}
+
+DEFAULT_SEARCH_PATROL_OBJECTS = [
+    "safe_observe",
+    "apple",
+    "bed",
+    "chair",
+    "cat",
+    "ball",
+]
+
 NON_EXECUTABLE_STATUSES = {
     ActionStatus.INVALID_ACTION,
     ActionStatus.INVALID_OBJECT,
@@ -143,8 +160,12 @@ class SequenceExecutor:
             return self.execute_wait(step)
         if action == "observe":
             return self.execute_observe(step)
+        if action == "search":
+            return self.execute_search(step)
         if action == "report":
             return self.execute_report(step)
+        if action == "feed":
+            return self.execute_feed(step)
         if action == "follow":
             return self.execute_follow(step)
 
@@ -173,9 +194,43 @@ class SequenceExecutor:
             duration_sec=max(duration_sec, 0.0),
         )
 
+    def execute_search(self, step: dict) -> ActionStatus:
+        params = step.get("params", {})
+        object_name = step.get("object")
+        nav_node = self._get_nav_node()
+
+        patrol_objects = params.get("patrol_objects")
+        if not isinstance(patrol_objects, list):
+            patrol_objects = self.default_search_patrol(object_name)
+
+        return actions.search_action(
+            node=nav_node,
+            object_name=object_name,
+            timeout_sec=float(params.get("timeout_sec", 45.0)),
+            scan_duration_sec=float(params.get("duration_sec", 4.0)),
+            angular_speed=float(params.get("angular_speed", 0.35)),
+            detection_topic=str(params.get("detection_topic", "/vision/detections")),
+            cmd_vel_topic=str(params.get("cmd_vel_topic", "/cmd_vel")),
+            patrol_objects=patrol_objects,
+            navigation_timeout_sec=float(
+                params.get("navigation_timeout_sec", 20.0)
+            ),
+            goal_tolerance_m=float(params.get("goal_tolerance_m", 0.35)),
+        )
+
     def execute_report(self, step: dict) -> ActionStatus:
         message = step.get("params", {}).get("message", "")
         return actions.report_action(message=message)
+
+    def execute_feed(self, step: dict) -> ActionStatus:
+        params = step.get("params", {})
+        object_name = step.get("object")
+        item = str(params.get("item", "apple"))
+
+        return actions.feed_action(
+            object_name=object_name,
+            item=item,
+        )
 
     def execute_follow(self, step: dict) -> ActionStatus:
         params = step.get("params", {})
@@ -185,6 +240,16 @@ class SequenceExecutor:
             duration_sec=max(float(params.get("duration_sec", 10.0)), 0.0),
             safe_distance_m=float(params.get("safe_distance_m", 1.0)),
         )
+
+    def default_search_patrol(self, object_name: str | None) -> list[str]:
+        patrol_objects = []
+
+        if object_name in STATIC_SEARCH_TARGETS:
+            patrol_objects.append(object_name)
+
+        patrol_objects.extend(DEFAULT_SEARCH_PATROL_OBJECTS)
+
+        return list(dict.fromkeys(patrol_objects))
 
     def _get_nav_node(self):
         if self._nav_node is None:

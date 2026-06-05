@@ -132,13 +132,13 @@ class RobotTestPipeline:
             assert "cat" in self.mapping, "cat 매핑 없음"
             assert self.mapping["cat"]["approach"] == True, "cat approach 불가"
 
-            # 안전 테스트 - potted_plant는 접근 금지
-            assert "potted_plant" in self.mapping, "potted_plant 매핑 없음"
-            assert self.mapping["potted_plant"]["approach"] == False, "potted_plant 접근 가능 (위험)"
+            # 안전 테스트 - vase는 접근 금지
+            assert "vase" in self.mapping, "vase 매핑 없음"
+            assert self.mapping["vase"]["approach"] == False, "vase 접근 가능 (위험)"
 
             print("  dog: approach✓ observe✓ follow✓")
             print("  cat: approach✓ observe✓ follow✓")
-            print("  potted_plant: approach✗ (안전 설정)")
+            print("  vase: approach✗ (안전 설정)")
             print("✓ Mapping OK")
             self.passed += 1
             return True
@@ -175,22 +175,22 @@ class RobotTestPipeline:
             self.failed += 1
             return False
 
-    def test_scenario_potted_plant_safety(self):
+    def test_scenario_vase_safety(self):
         """Test 6: 시나리오 테스트 - 화분 안전"""
-        print("\n[Test 6] Scenario: Potted Plant Safety Check")
+        print("\n[Test 6] Scenario: Vase Safety Check")
 
         try:
             # 화분 탐지
-            target = "potted_plant"
-            assert target in self.mapping, "potted_plant 매핑 없음"
+            target = "vase"
+            assert target in self.mapping, "vase 매핑 없음"
 
             # 접근 금지 확인
-            assert self.mapping[target]["approach"] == False, "potted_plant 접근 가능 (위험)"
-            assert self.mapping[target]["observe"] == True, "potted_plant 관찰 불가"
-            assert self.mapping[target]["follow"] == False, "potted_plant 추종 가능 (위험)"
+            assert self.mapping[target]["approach"] == False, "vase 접근 가능 (위험)"
+            assert self.mapping[target]["observe"] == True, "vase 관찰 불가"
+            assert self.mapping[target]["follow"] == False, "vase 추종 가능 (위험)"
 
-            print(f"  1. Detect: potted_plant (class_id: {self.objects['objects'][target]['class_id']})")
-            print(f"  2. Check mapping: potted_plant can approach? False ✓ (SAFE)")
+            print(f"  1. Detect: vase (class_id: {self.objects['objects'][target]['class_id']})")
+            print(f"  2. Check mapping: vase can approach? False ✓ (SAFE)")
             print(f"  3. Action: No approach, observe only")
             print("✓ Safety OK")
             self.passed += 1
@@ -355,7 +355,7 @@ class RobotTestPipeline:
         self.test_actions()
         self.test_mapping()
         self.test_scenario_dog_approach()
-        self.test_scenario_potted_plant_safety()
+        self.test_scenario_vase_safety()
         self.test_target_config()
         self.test_navigation_policy()
         self.test_static_target_resolver()

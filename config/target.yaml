@@ -1,4 +1,4 @@
-# Static objects: ball, bed, apple, potted_plant, chair, cat
+# Static objects: ball, bed, apple, vase, chair, cat
 # Dynamic objects: person, dog
 
 # Static object positions should match the world model poses.
