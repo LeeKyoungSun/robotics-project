@@ -32,11 +32,11 @@ if load_dotenv is not None:
 ALLOWED_OBJECTS = [
     "dog",
     "cat",
-    "bowl",
+    "apple",
     "ball",
     "bed",
     "chair",
-    "potted_plant",
+    "vase",
 ]
 
 ALLOWED_ACTIONS = [
@@ -64,12 +64,12 @@ REPORT_MESSAGES = {
     "feeding": "feeding scenario completed",
     "play": "play scenario completed",
     "pet_monitoring": "pet monitoring completed",
-    "potted_plant_safety": (
-        "potted plant is observe-only target. approach blocked for safety"
+    "vase_safety": (
+        "vase is observe-only target. approach blocked for safety"
     ),
     "bed_check": "bed check completed",
     "chair_check": "chair check completed",
-    "bowl_check": "bowl check completed",
+    "apple_check": "apple check completed",
     "ball_check": "ball check completed",
     "no_valid_target": "no valid target detected",
 }
@@ -81,12 +81,12 @@ LABEL_ALIAS = {
     "개": "dog",
     "cat": "cat",
     "고양이": "cat",
-    "bowl": "bowl",
-    "cup": "bowl",
-    "dish": "bowl",
-    "plate": "bowl",
-    "그릇": "bowl",
-    "밥그릇": "bowl",
+    "apple": "apple",
+    "cup": "apple",
+    "dish": "apple",
+    "plate": "apple",
+    "그릇": "apple",
+    "밥그릇": "apple",
     "ball": "ball",
     "sports ball": "ball",
     "sports_ball": "ball",
@@ -97,11 +97,10 @@ LABEL_ALIAS = {
     "침대": "bed",
     "chair": "chair",
     "의자": "chair",
-    "potted plant": "potted_plant",
-    "potted_plant": "potted_plant",
-    "plant": "potted_plant",
-    "airplane": "potted_plant",
-    "화분": "potted_plant",
+    "vase": "vase",
+    "plant": "vase",
+    "airplane": "vase",
+    "화분": "vase",
 }
 
 ACTION_ALIAS = {
@@ -130,7 +129,7 @@ ACTION_ALIAS = {
 APPROACH_OBJECTS = {
     "dog",
     "cat",
-    "bowl",
+    "apple",
     "ball",
     "bed",
     "chair",
@@ -139,7 +138,7 @@ APPROACH_OBJECTS = {
 OBSERVE_OBJECTS = {
     "dog",
     "cat",
-    "potted_plant",
+    "vase",
 }
 
 ACTION_SEQUENCE_SCHEMA = {
@@ -295,7 +294,7 @@ def report_step(step_id: int, message: str) -> dict[str, Any]:
 
 def feeding_sequence() -> list[dict[str, Any]]:
     return [
-        approach_step(1, "bowl"),
+        approach_step(1, "apple"),
         wait_step(2),
         observe_step(3, "dog"),
         report_step(4, REPORT_MESSAGES["feeding"]),
@@ -310,16 +309,16 @@ def play_sequence() -> list[dict[str, Any]]:
     ]
 
 
-def potted_plant_safety_sequence() -> list[dict[str, Any]]:
+def vase_safety_sequence() -> list[dict[str, Any]]:
     return [
-        observe_step(1, "potted_plant"),
-        report_step(2, REPORT_MESSAGES["potted_plant_safety"]),
+        observe_step(1, "vase"),
+        report_step(2, REPORT_MESSAGES["vase_safety"]),
     ]
 
 
 def static_multi_target_sequence() -> list[dict[str, Any]]:
     return [
-        approach_step(1, "bowl"),
+        approach_step(1, "apple"),
         approach_step(2, "bed"),
         approach_step(3, "chair"),
     ]
@@ -363,12 +362,12 @@ def smart_plan_sequence(
     text = (user_text or "").lower()
     labels = set(normalize_labels(detected_labels))
 
-    potted_requested = "potted_plant" in labels or has_any(
+    vase_requested = "vase" in labels or has_any(
         text,
-        ["화분", "plant", "potted"],
+        ["화분", "plant", "potted", "vase"],
     )
-    if potted_requested:
-        return potted_plant_safety_sequence()
+    if vase_requested:
+        return vase_safety_sequence()
 
     if has_any(text, ["밥", "급식", "먹이", "food", "meal", "feed", "rice", "배고픔"]):
         return feeding_sequence()
@@ -377,14 +376,14 @@ def smart_plan_sequence(
         return play_sequence()
 
     multi_text = all(keyword in text for keyword in ["그릇", "침대", "의자"])
-    multi_labels = {"bowl", "bed", "chair"}.issubset(labels)
+    multi_labels = {"apple", "bed", "chair"}.issubset(labels)
     if multi_text or multi_labels:
         return static_multi_target_sequence()
 
     static_target_keywords = [
         ("bed", ["침대", "bed"]),
         ("chair", ["의자", "chair"]),
-        ("bowl", ["그릇", "밥그릇", "bowl"]),
+        ("apple", ["사과", "apple", "그릇", "밥그릇"]),
         ("ball", ["공", "ball"]),
     ]
 
@@ -404,12 +403,12 @@ def smart_plan_sequence(
         return pet_monitoring_sequence("cat")
 
     if has_any(text, ["강아지", "dog"]) and not labels.intersection(
-        {"bed", "chair", "bowl", "ball"}
+        {"bed", "chair", "apple", "ball"}
     ):
         return pet_monitoring_sequence("dog")
 
     if has_any(text, ["고양이", "cat"]) and not labels.intersection(
-        {"bed", "chair", "bowl", "ball"}
+        {"bed", "chair", "apple", "ball"}
     ):
         return pet_monitoring_sequence("cat")
 
@@ -520,14 +519,14 @@ def coerce_action_sequence(
         params = raw_step.get("params")
         params = params if isinstance(params, dict) else {}
 
-        if object_name == "potted_plant" and action == "approach":
-            return potted_plant_safety_sequence()
+        if object_name == "vase" and action == "approach":
+            return vase_safety_sequence()
 
         if action in {"wait", "report"}:
             object_name = None
 
         if action is None:
-            if object_name == "potted_plant":
+            if object_name == "vase":
                 action = "observe"
             elif object_name in APPROACH_OBJECTS:
                 action = "approach"
@@ -597,19 +596,19 @@ Planning policy:
   executable alternative and report why.
 
 Safety and object rules:
-- Never approach potted_plant. It is observe-only.
-- If the user asks to approach potted_plant, replace it with observe
-  potted_plant and report "{REPORT_MESSAGES["potted_plant_safety"]}".
+- Never approach vase. It is observe-only.
+- If the user asks to approach vase, replace it with observe
+  vase and report "{REPORT_MESSAGES["vase_safety"]}".
 - object may be null only for wait and report.
 - Do not invent objects outside the allowed object list.
 
 Examples of valid plans:
 - "강아지 밥 챙겨줘" with dog visible:
-  approach bowl -> wait -> observe dog -> report
+  approach apple -> wait -> observe dog -> report
 - "침대 보고 의자도 확인해줘":
   approach bed -> approach chair -> report
 - "화분으로 가까이 가줘":
-  observe potted_plant -> report
+  observe vase -> report
 - "강아지 상태 알려줘":
   observe dog -> report
 

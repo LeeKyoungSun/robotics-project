@@ -33,7 +33,7 @@ def test_smart_planner_cases():
         assert actual == case["expected_sequence"], case["scenario"]
 
 
-def test_coerce_blocks_potted_plant_approach():
+def test_coerce_blocks_vase_approach():
     actual = coerce_action_sequence(
         {
             "sequence": [
@@ -185,7 +185,7 @@ def test_prompt_requests_intermediate_step_planning():
 
 def main():
     test_smart_planner_cases()
-    test_coerce_blocks_potted_plant_approach()
+    test_coerce_blocks_vase_approach()
     test_coerce_fills_executor_params_and_step_ids()
     test_coerce_preserves_llm_multi_step_plan()
     test_prompt_requests_intermediate_step_planning()

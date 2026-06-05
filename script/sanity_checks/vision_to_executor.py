@@ -14,7 +14,7 @@ OBSERVE_OBJECTS = {
     "dog",
     "cat",
     "person",
-    "potted_plant",
+    "vase",
 }
 
 APPROACH_OBJECTS = {
@@ -99,7 +99,7 @@ def main():
     # the Gazebo camera topic once the image subscriber and detector are ready.
     fake_detections = [
         {
-            "label": "potted plant",
+            "label": "vase",
             "confidence": 0.91,
             "bbox": {"x1": 120, "y1": 80, "x2": 300, "y2": 260},
             "source": "yolo",

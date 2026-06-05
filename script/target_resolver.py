@@ -117,7 +117,7 @@ if __name__ == "__main__":
     resolver = TargetResolver()
 
     test_objects = [
-        "bowl",
+        "apple",
         "bed",
         "chair",
         "cat",
