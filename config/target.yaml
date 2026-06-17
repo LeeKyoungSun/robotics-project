@@ -32,7 +32,7 @@ targets:
 
   chair_zone:
     frame_id: "map"
-    x: -1.45
+    x: -1.65
     y: -1.21
     yaw: -2.4469
     description: "Chair approach point"
