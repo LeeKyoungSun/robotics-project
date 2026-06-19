@@ -187,13 +187,16 @@ class SequenceExecutor:
         return actions.wait_action(duration_sec=max(duration_sec, 0.0))
 
     def execute_observe(self, step: dict) -> ActionStatus:
-        duration_sec = float(step.get("params", {}).get("duration_sec", 0.0))
+        duration_sec = float(step.get("params", {}).get("duration_sec", 5.0))
         object_name = step.get("object")
+        nav_node = self._get_nav_node()
+
         return actions.observe_action(
             object_name=object_name,
             duration_sec=max(duration_sec, 0.0),
+            node=nav_node,
         )
-
+    
     def execute_search(self, step: dict) -> ActionStatus:
         params = step.get("params", {})
         object_name = step.get("object")
@@ -223,14 +226,43 @@ class SequenceExecutor:
         return actions.report_action(message=message)
 
     def execute_feed(self, step: dict) -> ActionStatus:
-        params = step.get("params", {})
         object_name = step.get("object")
-        item = str(params.get("item", "apple"))
+        params = step.get("params", {})
+        item = params.get("item", "apple")
 
-        return actions.feed_action(
+        status = actions.feed_action(
             object_name=object_name,
             item=item,
         )
+
+        if status != ActionStatus.SUCCESS:
+            return status
+
+        if object_name == "dog":
+            nav_node = self._get_nav_node()
+
+            print("[FEED_PATCH] feed dog completed. approaching dog for demo.")
+            approach_status = actions.approach_action(
+                node=nav_node,
+                object_name="dog",
+                timeout_sec=60.0,
+                goal_tolerance_m=0.25,
+                retry_count=0,
+            )
+
+            if approach_status != ActionStatus.SUCCESS:
+                return approach_status
+
+            print("[FEED_PATCH] dog approach completed. observing dog.")
+            observe_status = actions.observe_action(
+                object_name="dog",
+                duration_sec=5.0,
+                node=nav_node,
+            )
+
+            return observe_status
+
+        return status
 
     def execute_follow(self, step: dict) -> ActionStatus:
         params = step.get("params", {})

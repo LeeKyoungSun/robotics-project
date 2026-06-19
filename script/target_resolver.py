@@ -21,10 +21,10 @@ class TargetResolver:
         "chair": "chair_zone",
         "cat": "cat_zone",
         "vase": "vase_zone",
+        "dog": "dog_zone",
     }
 
     DYNAMIC_OBJECTS = {
-        "dog",
         "person",
     }
 

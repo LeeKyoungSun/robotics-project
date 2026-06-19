@@ -759,12 +759,12 @@
     <include>
       <uri>model://bed</uri>
       <name>sanity_bed</name>
-      <pose>-2.40 1.70 0 0 0 3.1416</pose>
+      <pose>-2.00 1.40 0 0 0 3.1416</pose>
     </include>
     <include>
       <uri>model://chair</uri>
       <name>sanity_chair</name>
-      <pose>-1.55 -1.35 0 0 0 2.3562</pose>
+      <pose>-1.80 -1.50 0 0 0 2.3562</pose>
     </include>
     <include>
       <uri>model://vase</uri>

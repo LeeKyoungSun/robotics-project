@@ -25,14 +25,15 @@ targets:
 
   bed_zone:
     frame_id: "map"
-    x: -1.35
-    y: 0.95
+    x: -1.00
+    y: 0.70
     yaw: 2.5269
+
     description: "Bed approach point"
 
   chair_zone:
     frame_id: "map"
-    x: -1.65
+    x: -1.45
     y: -1.21
     yaw: -2.4469
     description: "Chair approach point"
@@ -43,6 +44,13 @@ targets:
     y: -1.08
     yaw: -0.6435
     description: "Cat approach point"
+  
+  dog_zone:
+    frame_id: "map"
+    x: 1.60
+    y: 0.8
+    yaw: 0.8
+    description: "Dog approach point - same as safe observe zone for simplicity"
 
   vase_zone:
     frame_id: "map"

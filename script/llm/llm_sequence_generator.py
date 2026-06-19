@@ -187,6 +187,7 @@ STATIC_APPROACH_OBJECTS = {
     "bed",
     "chair",
     "cat",
+    "dog",
 }
 
 OBSERVE_OBJECTS = {
@@ -1022,8 +1023,8 @@ Examples of valid plans:
 1. "강아지 밥 챙겨줘"
    approach apple -> observe dog -> report
 
-2. "강아지한테 먹이 줘"
-   approach apple -> feed dog -> observe dog -> report
+2. "Feed the dog."
+   approach apple -> approach dog -> observe dog -> report
 
 3. "강아지가 심심해 보여. 공으로 놀아줘"
    approach ball -> observe dog -> report
@@ -1031,13 +1032,13 @@ Examples of valid plans:
 4. "의자 확인해줘"
    approach chair -> observe chair -> report
 
-5. "침대 보고 의자도 확인해줘"
+5. "Look at the bed and check the chair.
    approach bed -> observe bed -> approach chair -> observe chair -> report
 
 6. "강아지 어디 있는지 찾아서 상태 알려줘"
    search dog -> observe dog -> report
 
-7. "꽃병으로 가까이 가줘"
+7. "Get closer to the vase."
    observe vase -> report
 
 Output rules:
@@ -1091,7 +1092,7 @@ Required JSON shape:
 ALLOWED_EXEC_OBJECTS = {"dog", "cat", "apple", "ball", "bed", "chair", "vase"}
 ALLOWED_EXEC_ACTIONS = {"approach", "observe", "wait", "report", "search", "feed", "follow"}
 
-APPROACH_OBJECTS = {"apple", "ball", "bed", "chair", "cat"}
+APPROACH_OBJECTS = {"apple", "ball", "bed", "chair", "cat","dog"}
 OBSERVE_OBJECTS = {"dog", "cat", "apple", "ball", "bed", "chair", "vase"}
 SEARCH_OBJECTS = {"dog", "cat", "apple", "ball", "bed", "chair", "vase"}
 FEED_OBJECTS = {"dog"}

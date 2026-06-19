@@ -3,47 +3,39 @@
 dog:
   approach: true
   observe: true
-  follow: true
   notes: "Primary pet target"
 
 cat:
   approach: true
   observe: true
-  follow: true
   notes: "Primary pet target"
 
 person:
   approach: true
   observe: true
-  follow: true
   notes: "Owner - follow when moving"
 
 ball:
   approach: true
   observe: true
-  follow: true
   notes: "Interactive play object"
 
 chair:
   approach: true
   observe: true
-  follow: false
   notes: "Static furniture - avoid collision"
 
 bed:
   approach: true
   observe: true
-  follow: false
   notes: "Static furniture"
 
 apple:
   approach: true
   observe: true
-  follow: false
   notes: "Pet food location"
 
 vase:
   approach: false
   observe: true
-  follow: false
   notes: "Observe-only vase"
